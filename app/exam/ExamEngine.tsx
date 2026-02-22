@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText } from 'react-icons/fi'
+import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText, FiLogOut } from 'react-icons/fi'
 import Link from 'next/link'
 
 const safeParse = (val: any, fallback: any) => {
@@ -147,17 +147,30 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
         <div className="max-w-4xl mx-auto px-4 sm:px-0">
             {/* Top Bar */}
             <div className="mb-4 sm:mb-6 flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center font-medium">
-                    <FiFileText className="mr-2 text-blue-500" />
-                    <span className="hidden sm:inline mr-1">进度：</span>
-                    <span className="text-gray-900 dark:text-white font-bold">{currentIndex + 1}</span> / {questions.length}
+                <div className="flex items-center flex-1">
+                    <div className="flex items-center font-medium shrink-0">
+                        <FiFileText className="mr-2 text-blue-500" />
+                        <span className="hidden sm:inline mr-1">进度：</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{currentIndex + 1}</span> / {questions.length}
+                    </div>
+                    <div className="w-full max-w-[12rem] bg-gray-100 dark:bg-gray-700 rounded-full h-2 hidden sm:block ml-4">
+                        <div
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+                        ></div>
+                    </div>
                 </div>
-                <div className="w-1/2 sm:w-64 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
-                    <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-                        style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-                    ></div>
-                </div>
+                <button
+                    onClick={() => {
+                        if (window.confirm('确定要退出当前练习吗？您的进度将不会被保存。')) {
+                            window.location.href = '/';
+                        }
+                    }}
+                    className="flex items-center text-gray-400 hover:text-red-500 transition-colors ml-4 shrink-0 font-medium"
+                    title="退出练习"
+                >
+                    <FiLogOut className="mr-1" /> 退出
+                </button>
             </div>
 
             {/* Question Card */}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiCheckCircle, FiArrowRight, FiArrowLeft, FiClock, FiTrash2 } from 'react-icons/fi'
+import { FiCheckCircle, FiArrowRight, FiArrowLeft, FiClock, FiTrash2, FiLogOut } from 'react-icons/fi'
 
 const safeParse = (val: any, fallback: any) => {
     if (val === null || val === undefined) return fallback;
@@ -91,10 +91,24 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
 
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="mb-6 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <div className="flex items-center">
-                    <FiClock className="mr-2" /> 错题进度：{currentIndex + 1} / {questions.length}
+            <div className="mb-4 sm:mb-6 flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center font-medium">
+                    <FiClock className="mr-2 text-blue-500" />
+                    <span className="hidden sm:inline mr-1">错题进度：</span>
+                    <span className="text-gray-900 dark:text-white font-bold">{currentIndex + 1}</span> / {questions.length}
                 </div>
+                <button
+                    onClick={() => {
+                        if (window.confirm('确定要退出错题本练习吗？')) {
+                            // Go back to mistakes list
+                            window.location.href = '/mistakes';
+                        }
+                    }}
+                    className="flex items-center text-gray-400 hover:text-red-500 transition-colors shrink-0 font-medium"
+                    title="退出练习"
+                >
+                    <FiLogOut className="mr-1" /> 退出
+                </button>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
