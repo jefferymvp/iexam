@@ -45,6 +45,7 @@ export default function UserManager() {
                     <thead className="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email (邮箱)</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">角色 (Role)</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后登录范围</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
@@ -55,6 +56,9 @@ export default function UserManager() {
                             <tr key={u.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-mono text-xs">
                                     {u.id.substring(0, 8)}...
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                    {u.email || '-'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
@@ -76,7 +80,7 @@ export default function UserManager() {
                         ))}
                         {users.length === 0 && (
                             <tr>
-                                <td colSpan={4} className="px-6 py-10 text-center text-gray-500">没有数据</td>
+                                <td colSpan={5} className="px-6 py-10 text-center text-gray-500">没有数据</td>
                             </tr>
                         )}
                     </tbody>
