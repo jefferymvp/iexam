@@ -117,7 +117,7 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                         <span className="shrink-0 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-bold px-3 py-1 rounded-md mr-3 uppercase mt-1 flex items-center">
                             {currentQ.type === 'multiple' ? '多选' : currentQ.type === 'judge' ? '判断' : '单选'}
                         </span>
-                        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white leading-relaxed">
+                        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
                             {currentQ.title}
                         </h2>
                     </div>
@@ -158,7 +158,7 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                                         {checked && <FiCheckCircle className="w-4 h-4 text-white" />}
                                     </div>
                                     <span className="font-medium text-lg min-w-[2rem]">{opt.label}.</span>
-                                    <span className="text-gray-700 dark:text-gray-300 leading-relaxed break-words">{opt.value}</span>
+                                    <span className="text-gray-700 dark:text-gray-300 leading-relaxed break-words whitespace-pre-wrap">{opt.value}</span>
                                 </div>
                             )
                         })}
@@ -182,7 +182,7 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                             <span className="text-blue-500 mr-2">🎯</span> 答案解析
                         </h3>
                         <p className="font-mono text-xl mb-4 text-green-600 dark:text-green-400 font-bold">正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer}</p>
-                        <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
+                        <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
                             {currentQ.parse || "暂无详细解析"}
                         </div>
                     </div>

@@ -180,7 +180,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                         <span className="shrink-0 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs font-bold px-2.5 py-1 rounded-lg mr-3 mt-0.5">
                             {currentQ.type === 'multiple' ? '多选' : currentQ.type === 'judge' ? '判断' : '单选'}
                         </span>
-                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-relaxed">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
                             {currentQ.title}
                         </h2>
                     </div>
@@ -225,7 +225,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                                         <FiCheckCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-100" />
                                     </div>
                                     <span className="font-bold text-base sm:text-lg min-w-[1.5rem] sm:min-w-[2rem] opacity-70">{opt.label}.</span>
-                                    <span className="font-medium text-sm sm:text-base leading-relaxed break-words flex-1 dark:text-gray-200">{opt.value}</span>
+                                    <span className="font-medium text-sm sm:text-base leading-relaxed break-words flex-1 dark:text-gray-200 whitespace-pre-wrap">{opt.value}</span>
                                 </div>
                             )
                         })}
@@ -244,7 +244,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                             <p className="font-mono text-base sm:text-lg mb-4 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 inline-block px-3 py-1 rounded-lg">
                                 正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer}
                             </p>
-                            <div className="prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed">
+                            <div className="prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                                 {currentQ.parse || "暂无详细解析内容。"}
                             </div>
                         </div>
