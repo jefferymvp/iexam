@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { FiBookOpen, FiList, FiLogOut, FiUser } from 'react-icons/fi'
 import { logout } from '@/app/login/actions'
+import NavLinks from './NavLinks'
 
 export default async function Navbar() {
     const supabase = await createClient()
@@ -30,28 +31,7 @@ export default async function Navbar() {
                                 iExam
                             </span>
                         </Link>
-                        <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
-                            <Link
-                                href="/"
-                                className="inline-flex items-center px-1 pt-1 border-b-2 border-blue-500 text-sm font-medium text-gray-900 dark:text-white"
-                            >
-                                首页/考试
-                            </Link>
-                            <Link
-                                href="/mistakes"
-                                className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-white"
-                            >
-                                错题本
-                            </Link>
-                            {isAdmin && (
-                                <Link
-                                    href="/admin"
-                                    className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-amber-600 hover:text-amber-700 hover:border-amber-300 dark:text-amber-400 dark:hover:text-amber-300"
-                                >
-                                    管理后台
-                                </Link>
-                            )}
-                        </div>
+                        <NavLinks isAdmin={isAdmin} />
                     </div>
                     <div className="flex items-center space-x-4">
                         <div className="text-sm text-gray-500 dark:text-gray-300 hidden md:block">

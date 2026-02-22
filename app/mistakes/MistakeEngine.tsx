@@ -4,6 +4,16 @@ import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { FiCheckCircle, FiArrowRight, FiArrowLeft, FiClock, FiTrash2 } from 'react-icons/fi'
 
+const safeParse = (val: any, fallback: any) => {
+    if (val === null || val === undefined) return fallback;
+    if (typeof val !== 'string') return val;
+    try {
+        return JSON.parse(val);
+    } catch (e) {
+        return val;
+    }
+}
+
 export default function MistakeEngine({ initialMistakes, userId }: { initialMistakes: any[], userId: string }) {
     const [questions, setQuestions] = useState(initialMistakes)
     const [currentIndex, setCurrentIndex] = useState(0)
@@ -43,9 +53,10 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
         setShowAnswer(true)
 
         const userAnswer = selectedAnswers[currentQ.id]
+        const parsedAnswer = safeParse(currentQ.answer, '');
         const isCorrect = Array.isArray(userAnswer)
-            ? JSON.stringify(userAnswer.sort()) === JSON.stringify(JSON.parse(currentQ.answer || '[]').sort())
-            : userAnswer === JSON.parse(currentQ.answer || '""')
+            ? JSON.stringify([...userAnswer].sort()) === JSON.stringify((parsedAnswer || []).sort())
+            : userAnswer === parsedAnswer
 
         setIsCorrectCurrent(isCorrect)
 
@@ -73,8 +84,8 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
         setIsCorrectCurrent(null)
     }
 
-    const options = JSON.parse(currentQ.options || '[]')
-    const correctAnswer = JSON.parse(currentQ.answer || '""')
+    const options = safeParse(currentQ.options, []);
+    const correctAnswer = safeParse(currentQ.answer, '');
     const myAnswer = selectedAnswers[currentQ.id]
     const isMultiple = currentQ.type === 'multiple'
 

@@ -5,6 +5,16 @@ import { createClient } from '@/utils/supabase/client'
 import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText } from 'react-icons/fi'
 import Link from 'next/link'
 
+const safeParse = (val: any, fallback: any) => {
+    if (val === null || val === undefined) return fallback;
+    if (typeof val !== 'string') return val;
+    try {
+        return JSON.parse(val);
+    } catch (e) {
+        return val;
+    }
+}
+
 interface ExamEngineProps {
     initialQuestions: any[]
     userId: string
@@ -38,9 +48,10 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
     }
 
     const checkAndLogMistake = async (q: any, userAnswer: any) => {
+        const parsedAnswer = safeParse(q.answer, '');
         const isCorrect = Array.isArray(userAnswer)
-            ? JSON.stringify([...userAnswer].sort()) === JSON.stringify(JSON.parse(q.answer || '[]').sort())
-            : userAnswer === JSON.parse(q.answer || '""')
+            ? JSON.stringify([...userAnswer].sort()) === JSON.stringify((parsedAnswer || []).sort())
+            : userAnswer === parsedAnswer
 
         if (!isCorrect) {
             await supabase.from('user_mistakes').upsert({
@@ -125,8 +136,8 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
         )
     }
 
-    const options = JSON.parse(currentQ.options || '[]')
-    const correctAnswer = JSON.parse(currentQ.answer || '""')
+    const options = safeParse(currentQ.options, []);
+    const correctAnswer = safeParse(currentQ.answer, '');
     const myAnswer = selectedAnswers[currentQ.id]
     const isMultiple = currentQ.type === 'multiple'
     const isShowMode = mode === 'show'
@@ -254,8 +265,8 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                     <button
                         onClick={handleNext}
                         className={`flex-[2] flex justify-center items-center px-6 py-4 sm:py-3 font-bold rounded-2xl transition-all shadow-md hover:shadow-lg ${currentIndex < questions.length - 1
-                                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
-                                : 'bg-green-600 text-white hover:bg-green-700'
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                     >
                         {currentIndex < questions.length - 1 ? (
