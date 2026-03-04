@@ -53,10 +53,15 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
         setShowAnswer(true)
 
         const userAnswer = selectedAnswers[currentQ.id]
-        const parsedAnswer = safeParse(currentQ.answer, '');
-        const isCorrect = Array.isArray(userAnswer)
-            ? JSON.stringify([...userAnswer].sort()) === JSON.stringify((parsedAnswer || []).sort())
-            : userAnswer === parsedAnswer
+        let parsedAnswer = safeParse(currentQ.answer, '');
+
+        let isCorrect = false;
+        if (Array.isArray(userAnswer)) {
+            const arrParsed = Array.isArray(parsedAnswer) ? parsedAnswer : [parsedAnswer];
+            isCorrect = JSON.stringify([...userAnswer].map(String).sort()) === JSON.stringify(arrParsed.map(String).sort());
+        } else {
+            isCorrect = String(userAnswer) === String(parsedAnswer);
+        }
 
         setIsCorrectCurrent(isCorrect)
 
@@ -124,9 +129,10 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
 
                     <div className="space-y-3">
                         {options.map((opt: any) => {
+                            const optKey = currentQ.type === 'judge' ? String(opt.value) : String(opt.label);
                             const checked = isMultiple
-                                ? ((myAnswer as string[]) || []).includes(opt.value)
-                                : myAnswer === opt.value
+                                ? ((myAnswer as string[]) || []).map(String).includes(optKey)
+                                : String(myAnswer) === optKey
 
                             let stateClass = "border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 cursor-pointer"
 
@@ -136,8 +142,8 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
 
                             if (showAnswer) {
                                 const isOptCorrect = isMultiple
-                                    ? (correctAnswer as string[]).includes(opt.value)
-                                    : correctAnswer === opt.value
+                                    ? (Array.isArray(correctAnswer) ? correctAnswer.map(String).includes(String(optKey)) : false)
+                                    : String(correctAnswer) === String(optKey)
 
                                 if (isOptCorrect) {
                                     stateClass = "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 cursor-default"
@@ -150,15 +156,19 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
 
                             return (
                                 <div
-                                    key={opt.value}
-                                    onClick={() => handleSelectOption(opt.value)}
+                                    key={optKey}
+                                    onClick={() => handleSelectOption(optKey)}
                                     className={`border-2 rounded-xl p-4 transition-all duration-200 flex items-center ${stateClass}`}
                                 >
-                                    <div className={`w-6 h-6 rounded flex items-center justify-center mr-4 border ${checked ? 'bg-current border-current' : 'border-gray-300 dark:border-gray-600'}`}>
+                                    <div className={`shrink-0 w-6 h-6 rounded flex items-center justify-center mr-4 border ${checked ? 'bg-current border-current' : 'border-gray-300 dark:border-gray-600'}`}>
                                         {checked && <FiCheckCircle className="w-4 h-4 text-white" />}
                                     </div>
-                                    <span className="font-medium text-lg min-w-[2rem]">{opt.label}.</span>
-                                    <span className="text-gray-700 dark:text-gray-300 leading-relaxed break-words whitespace-pre-wrap">{opt.value}</span>
+                                    <span className="font-medium text-lg min-w-[2rem] opacity-70">
+                                        {currentQ.type === 'judge' ? '' : `${opt.label}.`}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300 leading-relaxed break-words flex-1 whitespace-pre-wrap">
+                                        {currentQ.type === 'judge' ? opt.label : opt.value}
+                                    </span>
                                 </div>
                             )
                         })}
@@ -181,7 +191,7 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center mb-3">
                             <span className="text-blue-500 mr-2">🎯</span> 答案解析
                         </h3>
-                        <p className="font-mono text-xl mb-4 text-green-600 dark:text-green-400 font-bold">正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer}</p>
+                        <p className="font-mono text-xl mb-4 text-green-600 dark:text-green-400 font-bold">正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}</p>
                         <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
                             {currentQ.parse || "暂无详细解析"}
                         </div>

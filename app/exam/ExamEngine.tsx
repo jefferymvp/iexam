@@ -48,10 +48,15 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
     }
 
     const checkAndLogMistake = async (q: any, userAnswer: any) => {
-        const parsedAnswer = safeParse(q.answer, '');
-        const isCorrect = Array.isArray(userAnswer)
-            ? JSON.stringify([...userAnswer].sort()) === JSON.stringify((parsedAnswer || []).sort())
-            : userAnswer === parsedAnswer
+        let parsedAnswer = safeParse(q.answer, '');
+
+        let isCorrect = false;
+        if (Array.isArray(userAnswer)) {
+            const arrParsed = Array.isArray(parsedAnswer) ? parsedAnswer : [parsedAnswer];
+            isCorrect = JSON.stringify([...userAnswer].map(String).sort()) === JSON.stringify(arrParsed.map(String).sort());
+        } else {
+            isCorrect = String(userAnswer) === String(parsedAnswer);
+        }
 
         if (!isCorrect) {
             await supabase.from('user_mistakes').upsert({
@@ -187,9 +192,10 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
 
                     <div className="space-y-3 sm:space-y-4">
                         {options.map((opt: any) => {
+                            const optKey = currentQ.type === 'judge' ? String(opt.value) : String(opt.label);
                             const checked = isMultiple
-                                ? ((myAnswer as string[]) || []).includes(opt.value)
-                                : myAnswer === opt.value
+                                ? ((myAnswer as string[]) || []).map(String).includes(optKey)
+                                : String(myAnswer) === optKey
 
                             let stateClass = "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer text-gray-700"
                             let indicatorClass = "border-gray-300 dark:border-gray-600 text-transparent"
@@ -201,8 +207,8 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
 
                             if (hasSubmittedCurrent) {
                                 const isOptCorrect = isMultiple
-                                    ? (correctAnswer as string[]).includes(opt.value)
-                                    : correctAnswer === opt.value
+                                    ? (Array.isArray(correctAnswer) ? correctAnswer.map(String).includes(String(optKey)) : false)
+                                    : String(correctAnswer) === String(optKey)
 
                                 if (isOptCorrect) {
                                     stateClass = "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 cursor-default"
@@ -217,15 +223,19 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
 
                             return (
                                 <div
-                                    key={opt.value}
-                                    onClick={() => handleSelectOption(opt.value)}
+                                    key={optKey}
+                                    onClick={() => handleSelectOption(optKey)}
                                     className={`border-2 rounded-2xl p-4 sm:p-5 transition-all duration-200 flex items-center ${stateClass}`}
                                 >
                                     <div className={`shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center mr-3 sm:mr-4 border-2 transition-colors ${indicatorClass}`}>
                                         <FiCheckCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-100" />
                                     </div>
-                                    <span className="font-bold text-base sm:text-lg min-w-[1.5rem] sm:min-w-[2rem] opacity-70">{opt.label}.</span>
-                                    <span className="font-medium text-sm sm:text-base leading-relaxed break-words flex-1 dark:text-gray-200 whitespace-pre-wrap">{opt.value}</span>
+                                    <span className="font-bold text-base sm:text-lg min-w-[1.5rem] sm:min-w-[2rem] opacity-70">
+                                        {currentQ.type === 'judge' ? '' : `${opt.label}.`}
+                                    </span>
+                                    <span className="font-medium text-sm sm:text-base leading-relaxed break-words flex-1 dark:text-gray-200 whitespace-pre-wrap">
+                                        {currentQ.type === 'judge' ? opt.label : opt.value}
+                                    </span>
                                 </div>
                             )
                         })}
@@ -242,7 +252,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                         </div>
                         <div className="ml-11">
                             <p className="font-mono text-base sm:text-lg mb-4 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 inline-block px-3 py-1 rounded-lg">
-                                正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer}
+                                正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}
                             </p>
                             <div className="prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                                 {currentQ.parse || "暂无详细解析内容。"}

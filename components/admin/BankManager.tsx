@@ -62,18 +62,39 @@ export default function BankManager() {
             const bankId = newBank.id
 
             const questionsToInsert = jsonData.map((row: any) => {
+                const type = row['题型'] === '多选题' ? 'multiple' : row['题型'] === '判断题' ? 'judge' : 'single';
+                let rawAnswer = row['答案'] || row['Answer'] || 'A';
+                let formattedAnswer = rawAnswer;
+                if (type === 'multiple' && typeof rawAnswer === 'string') {
+                    formattedAnswer = rawAnswer.toUpperCase().replace(/\s/g, '').split('');
+                } else if (type === 'judge') {
+                    let ansStr = String(rawAnswer).trim();
+                    if (ansStr === '对' || ansStr === '正确' || ansStr === 'T' || ansStr === '1' || ansStr === 'A') {
+                        formattedAnswer = '1';
+                    } else {
+                        formattedAnswer = '0';
+                    }
+                } else {
+                    formattedAnswer = String(rawAnswer).trim();
+                }
+
+                let opts = type === 'judge' ? [
+                    { label: '正确', value: '1' },
+                    { label: '错误', value: '0' }
+                ] : [
+                    { label: 'A', value: String(row['选项A'] || row['选项 A'] || row['A'] || '').trim() },
+                    { label: 'B', value: String(row['选项B'] || row['选项 B'] || row['B'] || '').trim() },
+                    { label: 'C', value: String(row['选项C'] || row['选项 C'] || row['C'] || '').trim() },
+                    { label: 'D', value: String(row['选项D'] || row['选项 D'] || row['D'] || '').trim() }
+                ].filter(o => o.value);
+
                 return {
                     bank_id: bankId,
-                    title: row['题目'] || row['Title'],
-                    type: row['题型'] === '多选题' ? 'multiple' : row['题型'] === '判断题' ? 'judge' : 'single',
-                    options: JSON.stringify([
-                        { label: 'A', value: row['选项A'] || row['A'] },
-                        { label: 'B', value: row['选项B'] || row['B'] },
-                        { label: 'C', value: row['选项C'] || row['C'] },
-                        { label: 'D', value: row['选项D'] || row['D'] }
-                    ].filter(o => o.value)),
-                    answer: JSON.stringify(row['答案'] || row['Answer'] || 'A'),
-                    parse: row['解析'] || row['Parse'] || ''
+                    title: String(row['题目'] || row['Title'] || ''),
+                    type: type,
+                    options: opts,
+                    answer: formattedAnswer,
+                    parse: String(row['解析'] || row['Parse'] || '')
                 }
             })
 

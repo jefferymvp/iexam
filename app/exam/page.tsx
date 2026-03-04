@@ -61,20 +61,16 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
         )
     }
 
-    // Fetch questions
-    // Note: using Postgres RPC or order by random() would be better for real random tests.
+    // Fetch questions - fetch all matching, then shuffle randomly and slice
     let query = supabase.from('questions').select('*').eq('bank_id', bankId)
 
     if (type !== 'all') {
         query = query.eq('type', type)
     }
 
-    // limit based on count
-    query = query.limit(count)
+    const { data: allQuestions } = await query;
 
-    const { data: questions } = await query;
-
-    if (!questions || questions.length === 0) {
+    if (!allQuestions || allQuestions.length === 0) {
         return (
             <div className="max-w-2xl mx-auto text-center py-20">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">题库中暂无题目</h2>
@@ -83,6 +79,14 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
             </div>
         )
     }
+
+    // Fisher-Yates shuffle for random order
+    const shuffled = [...allQuestions]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const questions = shuffled.slice(0, count)
 
     return <ExamEngine initialQuestions={questions} userId={user.id} mode={mode} />
 }
