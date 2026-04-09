@@ -188,8 +188,13 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                             {currentQ.type === 'multiple' ? '多选' : currentQ.type === 'judge' ? '判断' : '单选'}
                         </span>
                         <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-relaxed [overflow-wrap:anywhere]">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {currentQ.title}
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                }}
+                            >
+                                {currentQ.title?.replace(/\n/g, '\n\n')}
                             </ReactMarkdown>
                         </div>
                     </div>
@@ -259,8 +264,13 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                                 正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}
                             </p>
                             <div className="prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed [overflow-wrap:anywhere]">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {currentQ.parse || "暂无详细解析内容。"}
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                    }}
+                                >
+                                    {(currentQ.parse || "暂无详细解析内容。").replace(/\n/g, '\n\n')}
                                 </ReactMarkdown>
                             </div>
                         </div>

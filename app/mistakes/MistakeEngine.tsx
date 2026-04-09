@@ -125,8 +125,13 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                             {currentQ.type === 'multiple' ? '多选' : currentQ.type === 'judge' ? '判断' : '单选'}
                         </span>
                         <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white leading-relaxed [overflow-wrap:anywhere]">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {currentQ.title}
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                }}
+                            >
+                                {currentQ.title?.replace(/\n/g, '\n\n')}
                             </ReactMarkdown>
                         </div>
                     </div>
@@ -197,8 +202,13 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                         </h3>
                         <p className="font-mono text-xl mb-4 text-green-600 dark:text-green-400 font-bold">正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}</p>
                         <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 [overflow-wrap:anywhere]">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {currentQ.parse || "暂无详细解析"}
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                }}
+                            >
+                                {(currentQ.parse || "暂无详细解析").replace(/\n/g, '\n\n')}
                             </ReactMarkdown>
                         </div>
                     </div>

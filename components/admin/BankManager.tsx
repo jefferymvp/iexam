@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiUploadCloud, FiTrash2, FiFileText, FiPower, FiSettings, FiDatabase } from 'react-icons/fi'
+import { FiUploadCloud, FiTrash2, FiFileText, FiPower, FiSettings, FiDatabase, FiEdit2, FiCheck, FiX } from 'react-icons/fi'
 import * as XLSX from 'xlsx'
 import QuestionManager from './QuestionManager'
 
@@ -11,13 +11,27 @@ export default function BankManager() {
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
     const [selectedBank, setSelectedBank] = useState<{ id: string, name: string } | null>(null)
-    const fileInputRef = useRef<HTMLInputElement>(null)
 
+    // 重命名状态
+    const [renamingId, setRenamingId] = useState<string | null>(null)
+    const [renameValue, setRenameValue] = useState('')
+    const [renaming, setRenaming] = useState(false)
+    const renameInputRef = useRef<HTMLInputElement>(null)
+
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const supabase = createClient()
 
     useEffect(() => {
         fetchBanks()
     }, [])
+
+    // 进入重命名模式时自动聚焦
+    useEffect(() => {
+        if (renamingId && renameInputRef.current) {
+            renameInputRef.current.focus()
+            renameInputRef.current.select()
+        }
+    }, [renamingId])
 
     const fetchBanks = async () => {
         setLoading(true)
@@ -36,6 +50,45 @@ export default function BankManager() {
     const handleToggle = async (id: string, currentStatus: boolean) => {
         await supabase.from('question_banks').update({ is_active: !currentStatus }).eq('id', id)
         fetchBanks()
+    }
+
+    // 开始重命名
+    const startRename = (bank: any) => {
+        setRenamingId(bank.id)
+        setRenameValue(bank.name)
+    }
+
+    // 确认重命名
+    const confirmRename = async () => {
+        if (!renamingId) return
+        const trimmed = renameValue.trim()
+        if (!trimmed) {
+            alert('题库名称不能为空')
+            return
+        }
+        setRenaming(true)
+        const { error } = await supabase
+            .from('question_banks')
+            .update({ name: trimmed })
+            .eq('id', renamingId)
+        setRenaming(false)
+        if (error) {
+            alert('重命名失败: ' + error.message)
+        } else {
+            setRenamingId(null)
+            fetchBanks()
+        }
+    }
+
+    // 取消重命名
+    const cancelRename = () => {
+        setRenamingId(null)
+        setRenameValue('')
+    }
+
+    const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') confirmRename()
+        if (e.key === 'Escape') cancelRename()
     }
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,6 +215,14 @@ export default function BankManager() {
                                 <FiFileText className="w-6 h-6" />
                             </div>
                             <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* 重命名按钮 */}
+                                <button
+                                    onClick={() => startRename(bank)}
+                                    title="重命名题库"
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                >
+                                    <FiEdit2 className="w-5 h-5" />
+                                </button>
                                 <button
                                     onClick={() => handleToggle(bank.id, bank.is_active)}
                                     title={bank.is_active ? "停用该题库" : "启用该题库"}
@@ -178,12 +239,47 @@ export default function BankManager() {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1">{bank.name}</h3>
-                            <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 border ${bank.is_active !== false ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800'}`}>
-                                {bank.is_active !== false ? '使用中' : '已停用'}
-                            </span>
+
+                        {/* 题库名称 - 支持行内编辑 */}
+                        <div className="flex items-center gap-2 mb-1 min-h-[2rem]">
+                            {renamingId === bank.id ? (
+                                <div className="flex items-center gap-1.5 flex-1">
+                                    <input
+                                        ref={renameInputRef}
+                                        type="text"
+                                        value={renameValue}
+                                        onChange={(e) => setRenameValue(e.target.value)}
+                                        onKeyDown={handleRenameKeyDown}
+                                        disabled={renaming}
+                                        className="flex-1 text-base font-bold text-gray-900 dark:text-white bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-400 dark:border-blue-500 rounded-lg px-2 py-0.5 outline-none min-w-0"
+                                    />
+                                    <button
+                                        onClick={confirmRename}
+                                        disabled={renaming}
+                                        title="确认重命名"
+                                        className="p-1 rounded-lg text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-50 shrink-0"
+                                    >
+                                        <FiCheck className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={cancelRename}
+                                        disabled={renaming}
+                                        title="取消"
+                                        className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 shrink-0"
+                                    >
+                                        <FiX className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1">{bank.name}</h3>
+                                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 border ${bank.is_active !== false ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800'}`}>
+                                        {bank.is_active !== false ? '使用中' : '已停用'}
+                                    </span>
+                                </>
+                            )}
                         </div>
+
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 line-clamp-2 flex-grow">
                             {bank.description || '无具体描述'}
                         </p>
