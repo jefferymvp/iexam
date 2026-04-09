@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { FiUsers, FiDatabase, FiLayers, FiHardDrive } from 'react-icons/fi'
+import { FiUsers, FiDatabase, FiLayers, FiHardDrive, FiAlertCircle } from 'react-icons/fi'
 
 import OrgManager from './OrgManager'
 import UserManager from './UserManager'
 import BankManager from './BankManager'
 import AdminStorageTab from './AdminStorageTab'
+import BugManager from './BugManager'
 
 export default function AdminTabs() {
     const [activeTab, setActiveTab] = useState('orgs')
@@ -16,6 +17,7 @@ export default function AdminTabs() {
         { id: 'users', name: '用户管理', icon: FiUsers },
         { id: 'banks', name: '题库管理', icon: FiDatabase },
         { id: 'storage', name: '存储管理', icon: FiHardDrive },
+        { id: 'bugs', name: 'Bug 处理', icon: FiAlertCircle },
     ]
 
     return (
@@ -56,6 +58,9 @@ export default function AdminTabs() {
                 </div>
                 <div className={`transition-opacity duration-300 ${activeTab === 'storage' ? 'block animate-in fade-in' : 'hidden'}`}>
                     <AdminStorageTab />
+                </div>
+                <div className={`transition-opacity duration-300 ${activeTab === 'bugs' ? 'block animate-in fade-in' : 'hidden'}`}>
+                    <BugManager />
                 </div>
             </div>
         </div>

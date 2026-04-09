@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText, FiLogOut } from 'react-icons/fi'
+import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText, FiLogOut, FiAlertTriangle } from 'react-icons/fi'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import BugReportModal from '@/components/exam/BugReportModal'
 
 const safeParse = (val: any, fallback: any) => {
     if (val === null || val === undefined) return fallback;
@@ -30,6 +31,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
     const [showAnswerForQ, setShowAnswerForQ] = useState<Record<string, boolean>>({})
     const [isFinished, setIsFinished] = useState(false)
     const [score, setScore] = useState(0)
+    const [isBugModalOpen, setIsBugModalOpen] = useState(false)
 
     const supabase = createClient()
     const currentQ = questions[currentIndex]
@@ -167,18 +169,35 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                         ></div>
                     </div>
                 </div>
-                <button
-                    onClick={() => {
-                        if (window.confirm('确定要退出当前练习吗？您的进度将不会被保存。')) {
-                            window.location.href = '/';
-                        }
-                    }}
-                    className="flex items-center text-gray-400 hover:text-red-500 transition-colors ml-4 shrink-0 font-medium"
-                    title="退出练习"
-                >
-                    <FiLogOut className="mr-1" /> 退出
-                </button>
+                <div className="flex items-center gap-2 ml-4 shrink-0">
+                    <button
+                        onClick={() => setIsBugModalOpen(true)}
+                        className="flex items-center text-gray-400 hover:text-amber-500 transition-colors font-medium px-2 py-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/10"
+                        title="反馈本题错误"
+                    >
+                        <FiAlertTriangle className="mr-1" /> <span className="hidden xs:inline">报错</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (window.confirm('确定要退出当前练习吗？您的进度将不会被保存。')) {
+                                window.location.href = '/';
+                            }
+                        }}
+                        className="flex items-center text-gray-400 hover:text-red-500 transition-colors font-medium px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10"
+                        title="退出练习"
+                    >
+                        <FiLogOut className="mr-1" /> <span className="hidden xs:inline">退出</span>
+                    </button>
+                </div>
             </div>
+
+            {/* Bug Report Modal */}
+            <BugReportModal
+                isOpen={isBugModalOpen}
+                onClose={() => setIsBugModalOpen(false)}
+                questionId={currentQ.id}
+                userId={userId}
+            />
 
             {/* Question Card */}
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6 sm:mb-8">
@@ -191,7 +210,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                    p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                    p: ({ node, ...props }: any) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
                                 }}
                             >
                                 {currentQ.title?.replace(/\n/g, '\n\n')}
@@ -267,7 +286,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
-                                        p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                        p: ({ node, ...props }: any) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
                                     }}
                                 >
                                     {(currentQ.parse || "暂无详细解析内容。").replace(/\n/g, '\n\n')}
