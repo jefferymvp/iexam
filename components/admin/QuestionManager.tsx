@@ -595,8 +595,13 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                         {previewQuestion.type === 'multiple' ? '多选' : previewQuestion.type === 'judge' ? '判断' : '单选'}
                                     </span>
                                     <div className="prose prose-lg dark:prose-invert max-w-none text-gray-900 dark:text-white leading-relaxed [overflow-wrap:anywhere]">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {previewQuestion.title}
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                            }}
+                                        >
+                                            {previewQuestion.title?.replace(/\n/g, '\n\n')}
                                         </ReactMarkdown>
                                     </div>
                                 </div>
@@ -643,8 +648,13 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                         答案解析
                                     </h4>
                                     <div className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 leading-relaxed [overflow-wrap:anywhere]">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {previewQuestion.parse || "暂无详细解析内容。"}
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
+                                            }}
+                                        >
+                                            {(previewQuestion.parse || "暂无详细解析内容。")?.replace(/\n/g, '\n\n')}
                                         </ReactMarkdown>
                                     </div>
                                 </div>
