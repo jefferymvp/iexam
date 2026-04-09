@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { FiCheckCircle, FiArrowRight, FiArrowLeft, FiClock, FiTrash2, FiLogOut } from 'react-icons/fi'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 const safeParse = (val: any, fallback: any) => {
     if (val === null || val === undefined) return fallback;
@@ -122,9 +124,11 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                         <span className="shrink-0 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-bold px-3 py-1 rounded-md mr-3 uppercase mt-1 flex items-center">
                             {currentQ.type === 'multiple' ? '多选' : currentQ.type === 'judge' ? '判断' : '单选'}
                         </span>
-                        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
-                            {currentQ.title}
-                        </h2>
+                        <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white leading-relaxed [overflow-wrap:anywhere]">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {currentQ.title}
+                            </ReactMarkdown>
+                        </div>
                     </div>
 
                     <div className="space-y-3">
@@ -192,8 +196,10 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                             <span className="text-blue-500 mr-2">🎯</span> 答案解析
                         </h3>
                         <p className="font-mono text-xl mb-4 text-green-600 dark:text-green-400 font-bold">正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}</p>
-                        <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                            {currentQ.parse || "暂无详细解析"}
+                        <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 [overflow-wrap:anywhere]">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {currentQ.parse || "暂无详细解析"}
+                            </ReactMarkdown>
                         </div>
                     </div>
                 )}

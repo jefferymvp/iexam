@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText, FiLogOut } from 'react-icons/fi'
 import Link from 'next/link'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 const safeParse = (val: any, fallback: any) => {
     if (val === null || val === undefined) return fallback;
@@ -185,9 +187,11 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                         <span className="shrink-0 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs font-bold px-2.5 py-1 rounded-lg mr-3 mt-0.5">
                             {currentQ.type === 'multiple' ? '多选' : currentQ.type === 'judge' ? '判断' : '单选'}
                         </span>
-                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
-                            {currentQ.title}
-                        </h2>
+                        <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-relaxed [overflow-wrap:anywhere]">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {currentQ.title}
+                            </ReactMarkdown>
+                        </div>
                     </div>
 
                     <div className="space-y-3 sm:space-y-4">
@@ -254,8 +258,10 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                             <p className="font-mono text-base sm:text-lg mb-4 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 inline-block px-3 py-1 rounded-lg">
                                 正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}
                             </p>
-                            <div className="prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-                                {currentQ.parse || "暂无详细解析内容。"}
+                            <div className="prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed [overflow-wrap:anywhere]">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {currentQ.parse || "暂无详细解析内容。"}
+                                </ReactMarkdown>
                             </div>
                         </div>
                     </div>

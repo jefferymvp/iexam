@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiUploadCloud, FiTrash2, FiFileText, FiPower } from 'react-icons/fi'
+import { FiUploadCloud, FiTrash2, FiFileText, FiPower, FiSettings } from 'react-icons/fi'
 import * as XLSX from 'xlsx'
+import QuestionManager from './QuestionManager'
 
 export default function BankManager() {
     const [banks, setBanks] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
+    const [selectedBank, setSelectedBank] = useState<{ id: string, name: string } | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const supabase = createClient()
@@ -47,8 +49,6 @@ export default function BankManager() {
             const worksheet = workbook.Sheets[workbook.SheetNames[0]]
             const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
-            // Very simplified example logic to create a default bank and import questions:
-            // Ideal system allows mapping Excel's "题库名称" to distinct Banks.
             const bankName = file.name.replace(/\.[^/.]+$/, "") // use file name as bank name
 
             const { data: newBank, error: bankErr } = await supabase
@@ -65,11 +65,12 @@ export default function BankManager() {
                 const type = row['题型'] === '多选题' ? 'multiple' : row['题型'] === '判断题' ? 'judge' : 'single';
                 let rawAnswer = row['答案'] || row['Answer'] || 'A';
                 let formattedAnswer = rawAnswer;
-                if (type === 'multiple' && typeof rawAnswer === 'string') {
-                    formattedAnswer = rawAnswer.toUpperCase().replace(/\s/g, '').split('');
+
+                if (type === 'multiple') {
+                    formattedAnswer = String(rawAnswer).toUpperCase().replace(/[\s,，]/g, '').split('');
                 } else if (type === 'judge') {
-                    let ansStr = String(rawAnswer).trim();
-                    if (ansStr === '对' || ansStr === '正确' || ansStr === 'T' || ansStr === '1' || ansStr === 'A') {
+                    let ansStr = String(rawAnswer).trim().toUpperCase();
+                    if (['对', '正确', 'T', 'TRUE', '1', 'A', 'YES', 'Y', '√'].includes(ansStr)) {
                         formattedAnswer = '1';
                     } else {
                         formattedAnswer = '0';
@@ -112,6 +113,16 @@ export default function BankManager() {
         }
     }
 
+    if (selectedBank) {
+        return (
+            <QuestionManager 
+                bankId={selectedBank.id} 
+                bankName={selectedBank.name} 
+                onBack={() => setSelectedBank(null)} 
+            />
+        )
+    }
+
     if (loading) return <div className="text-center py-10">加载中...</div>
 
     return (
@@ -143,11 +154,11 @@ export default function BankManager() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {banks.map((bank) => (
-                    <div key={bank.id} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 relative group">
+                    <div key={bank.id} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 relative group flex flex-col">
                         <div className="flex justify-between items-start mb-4">
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400">
                                 <FiFileText className="w-6 h-6" />
                             </div>
                             <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -173,17 +184,26 @@ export default function BankManager() {
                                 {bank.is_active !== false ? '使用中' : '已停用'}
                             </span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 min-h-[40px]">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 line-clamp-2 flex-grow">
                             {bank.description || '无具体描述'}
                         </p>
-                        <div className="text-xs text-gray-400 dark:text-gray-500">
-                            创建于: {new Date(bank.created_at).toLocaleDateString()}
+                        
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-700">
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                                {new Date(bank.created_at).toLocaleDateString()}
+                            </div>
+                            <button
+                                onClick={() => setSelectedBank({ id: bank.id, name: bank.name })}
+                                className="flex items-center gap-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                                <FiSettings className="w-4 h-4" /> 管理题目
+                            </button>
                         </div>
                     </div>
                 ))}
 
                 {banks.length === 0 && (
-                    <div className="col-span-full text-center py-20 text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+                    <div className="col-span-full text-center py-20 text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
                         <FiDatabase className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                         <p>还没有录入任何题库，点击右上角导入吧</p>
                     </div>
@@ -193,5 +213,4 @@ export default function BankManager() {
     )
 }
 
-// Add FiDatabase icon since it's used in empty state
 import { FiDatabase } from 'react-icons/fi'
