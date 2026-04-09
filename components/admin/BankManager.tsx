@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiUploadCloud, FiTrash2, FiFileText, FiPower, FiSettings } from 'react-icons/fi'
+import { FiUploadCloud, FiTrash2, FiFileText, FiPower, FiSettings, FiDatabase } from 'react-icons/fi'
 import * as XLSX from 'xlsx'
 import QuestionManager from './QuestionManager'
 
@@ -212,5 +212,3 @@ export default function BankManager() {
         </div>
     )
 }
-
-import { FiDatabase } from 'react-icons/fi'

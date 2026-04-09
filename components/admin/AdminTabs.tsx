@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { FiUsers, FiDatabase, FiLayers } from 'react-icons/fi'
+import { FiUsers, FiDatabase, FiLayers, FiHardDrive } from 'react-icons/fi'
 
 import OrgManager from './OrgManager'
 import UserManager from './UserManager'
 import BankManager from './BankManager'
+import AdminStorageTab from './AdminStorageTab'
 
 export default function AdminTabs() {
     const [activeTab, setActiveTab] = useState('orgs')
@@ -14,6 +15,7 @@ export default function AdminTabs() {
         { id: 'orgs', name: '组织管理', icon: FiLayers },
         { id: 'users', name: '用户管理', icon: FiUsers },
         { id: 'banks', name: '题库管理', icon: FiDatabase },
+        { id: 'storage', name: '存储管理', icon: FiHardDrive },
     ]
 
     return (
@@ -28,7 +30,7 @@ export default function AdminTabs() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`
-                  w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm sm:text-base transition-colors flex items-center justify-center relative
+                  flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm sm:text-base transition-colors flex items-center justify-center relative
                   ${isActive
                                         ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10'
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'}
@@ -51,6 +53,9 @@ export default function AdminTabs() {
                 </div>
                 <div className={`transition-opacity duration-300 ${activeTab === 'banks' ? 'block animate-in fade-in' : 'hidden'}`}>
                     <BankManager />
+                </div>
+                <div className={`transition-opacity duration-300 ${activeTab === 'storage' ? 'block animate-in fade-in' : 'hidden'}`}>
+                    <AdminStorageTab />
                 </div>
             </div>
         </div>

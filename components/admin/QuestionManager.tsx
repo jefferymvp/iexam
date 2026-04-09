@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiImage, FiArrowLeft, FiCheck, FiX, FiSave, FiChevronLeft, FiChevronRight, FiEye, FiCheckCircle } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiImage, FiArrowLeft, FiCheck, FiX, FiSave, FiChevronLeft, FiChevronRight, FiEye, FiCheckCircle, FiInfo } from 'react-icons/fi'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -51,8 +51,8 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
             .from('questions')
             .select('*')
             .eq('bank_id', bankId)
-            .order('type', { ascending: true })
-            .order('created_at', { ascending: true })
+            .order('type', { ascending: false })
+            .order('title', { ascending: true })
         if (data) setQuestions(data)
         setLoading(false)
     }
@@ -346,186 +346,223 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
             {/* Edit Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-900 w-full max-w-2xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+                    <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[95vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-gray-100 dark:border-gray-800">
+                        {/* Header */}
                         <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {editingQuestion ? '编辑题目' : '新增题目'}
-                            </h3>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                                    <FiEdit2 className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                        {editingQuestion ? '编辑题目' : '新增题目'}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">正在编辑题库中的题目内容及配置</p>
+                                </div>
+                            </div>
                             <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
                                 <FiX className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto space-y-6 flex-1">
-                            {/* Type Selection */}
-                            <div className="flex gap-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                                {['single', 'multiple', 'judge'].map((type) => (
-                                    <button
-                                        key={type}
-                                        onClick={() => {
-                                            setFormData(prev => ({ 
-                                                ...prev, 
-                                                type: type as any,
-                                                answer: type === 'multiple' ? [] : (type === 'judge' ? '1' : ''),
-                                                options: type === 'judge' ? [
-                                                    { label: '正确', value: '1' },
-                                                    { label: '错误', value: '0' }
-                                                ] : (prev.options.length === 2 ? [
-                                                    { label: 'A', value: '' }, { label: 'B', value: '' }, { label: 'C', value: '' }, { label: 'D', value: '' }
-                                                ] : prev.options)
-                                            }))
-                                        }}
-                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                                            formData.type === type 
-                                            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
-                                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                        }`}
-                                    >
-                                        {type === 'multiple' ? '多选' : type === 'judge' ? '判断' : '单选'}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Title / Stem */}
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    <label>题干内容 (支持 Markdown)</label>
-                                    <button 
-                                        onClick={() => imageInputRef.current?.click()}
-                                        disabled={uploadingImage}
-                                        className="text-blue-600 hover:text-blue-700 flex items-center gap-1 disabled:opacity-50"
-                                    >
-                                        <FiImage /> {uploadingImage ? '上传中...' : '插入图片'}
-                                    </button>
-                                    <input 
-                                        type="file" 
-                                        hidden 
-                                        ref={imageInputRef} 
-                                        accept="image/*" 
-                                        onChange={handleImageUpload} 
-                                    />
-                                </div>
-                                <textarea
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    rows={4}
-                                    placeholder="请输入题目内容，支持图片 URL 或 Markdown 链接..."
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 outline-none rounded-2xl transition-all"
-                                />
-                            </div>
-
-                            {/* Options */}
-                            {formData.type !== 'judge' && (
-                                <div className="space-y-3">
+                        {/* Main Body - Split Layout */}
+                        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                            
+                            {/* Left Column: Stem Editing */}
+                            <div className="flex-1 p-8 overflow-y-auto border-r border-gray-100 dark:border-gray-800 space-y-6 bg-white dark:bg-gray-950">
+                                <div className="space-y-4 h-full flex flex-col">
                                     <div className="flex justify-between items-center">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">备选项设置</label>
+                                        <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-lg">
+                                            <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
+                                            题干内容
+                                        </div>
                                         <button 
-                                            onClick={() => {
-                                                const nextLabel = String.fromCharCode(65 + formData.options.length);
-                                                setFormData(prev => ({ ...prev, options: [...prev.options, { label: nextLabel, value: '' }] }))
-                                            }}
-                                            className="text-xs text-blue-600 hover:text-blue-700 font-bold"
+                                            onClick={() => imageInputRef.current?.click()}
+                                            disabled={uploadingImage}
+                                            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-2 font-medium text-sm border border-blue-100 dark:border-blue-800"
                                         >
-                                            + 添加选项
+                                            <FiImage className="w-4 h-4" /> {uploadingImage ? '上传中...' : '插入图片'}
                                         </button>
+                                        <input 
+                                            type="file" 
+                                            hidden 
+                                            ref={imageInputRef} 
+                                            accept="image/*" 
+                                            onChange={handleImageUpload} 
+                                        />
                                     </div>
-                                    <div className="space-y-3">
-                                        {formData.options.map((opt, idx) => (
-                                            <div key={idx} className="flex gap-3">
-                                                <div className="w-10 h-10 shrink-0 flex items-center justify-center font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-100 dark:border-blue-800">
-                                                    {opt.label}
-                                                </div>
-                                                <input
-                                                    type="text"
-                                                    value={opt.value}
-                                                    placeholder={`请输入选项 ${opt.label} 的描述...`}
-                                                    onChange={(e) => {
-                                                        const newOpts = [...formData.options]
-                                                        newOpts[idx].value = e.target.value
-                                                        setFormData({ ...formData, options: newOpts })
-                                                    }}
-                                                    className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 outline-none rounded-xl transition-all"
-                                                />
-                                                {formData.options.length > 2 && (
-                                                    <button 
-                                                        onClick={() => {
-                                                            const newOpts = formData.options.filter((_, i) => i !== idx).map((o, i) => ({ ...o, label: String.fromCharCode(65 + i) }))
-                                                            setFormData({ ...formData, options: newOpts })
-                                                        }}
-                                                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <FiTrash2 />
-                                                    </button>
-                                                )}
-                                            </div>
+                                    <div className="flex-1 flex flex-col min-h-[400px]">
+                                        <textarea
+                                            value={formData.title}
+                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                            placeholder="在此输入题目内容，支持图片 URL 或 Markdown 链接..."
+                                            className="flex-1 w-full p-6 text-lg bg-gray-50/50 dark:bg-gray-900/50 border-2 border-gray-100 dark:border-gray-800 focus:border-blue-500 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 outline-none rounded-2xl transition-all resize-none leading-relaxed text-gray-900 dark:text-gray-100"
+                                        />
+                                        <div className="mt-3 text-xs text-gray-400 flex items-center gap-2">
+                                            <FiInfo className="shrink-0" />
+                                            小技巧：您可以直接将图片链接或 Markdown 图片格式（![图片](链接)）粘贴至此处。
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Config sidebar */}
+                            <div className="w-full md:w-[460px] p-8 overflow-y-auto bg-gray-50/30 dark:bg-gray-900/20 space-y-8 shrink-0">
+                                
+                                {/* 1. Type Selection */}
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">题目类型</label>
+                                    <div className="flex gap-2 p-1.5 bg-gray-100 dark:bg-gray-800 rounded-2xl">
+                                        {['single', 'multiple', 'judge'].map((type) => (
+                                            <button
+                                                key={type}
+                                                onClick={() => {
+                                                    setFormData(prev => ({ 
+                                                        ...prev, 
+                                                        type: type as any,
+                                                        answer: type === 'multiple' ? [] : (type === 'judge' ? '1' : ''),
+                                                        options: type === 'judge' ? [
+                                                            { label: '正确', value: '1' },
+                                                            { label: '错误', value: '0' }
+                                                        ] : (prev.options.length === 2 ? [
+                                                            { label: 'A', value: '' }, { label: 'B', value: '' }, { label: 'C', value: '' }, { label: 'D', value: '' }
+                                                        ] : prev.options)
+                                                    }))
+                                                }}
+                                                className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${
+                                                    formData.type === type 
+                                                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
+                                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                                }`}
+                                            >
+                                                {type === 'multiple' ? '多选' : type === 'judge' ? '判断' : '单选'}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Answer Selection */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">设定正确答案</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.options.map((opt) => {
-                                        const optValue = formData.type === 'judge' ? opt.value : opt.label;
-                                        const isSelected = formData.type === 'multiple' 
-                                            ? (formData.answer as string[]).includes(optValue)
-                                            : formData.answer === optValue;
-                                        
-                                        return (
-                                            <button
-                                                key={opt.label}
+                                {/* 2. Options Settings */}
+                                {formData.type !== 'judge' && (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end">
+                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">备选项配置</label>
+                                            <button 
                                                 onClick={() => {
-                                                    if (formData.type === 'multiple') {
-                                                        const current = (formData.answer as string[])
-                                                        const newVal = current.includes(optValue)
-                                                            ? current.filter(v => v !== optValue)
-                                                            : [...current, optValue].sort()
-                                                        setFormData({ ...formData, answer: newVal })
-                                                    } else {
-                                                        setFormData({ ...formData, answer: optValue })
-                                                    }
+                                                    const nextLabel = String.fromCharCode(65 + formData.options.length);
+                                                    setFormData(prev => ({ ...prev, options: [...prev.options, { label: nextLabel, value: '' }] }))
                                                 }}
-                                                className={`min-w-[4rem] px-4 py-2 rounded-xl border-2 font-bold transition-all ${
-                                                    isSelected 
-                                                    ? 'bg-green-600 border-green-600 text-white shadow-md' 
-                                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-green-300 dark:hover:border-green-800'
-                                                }`}
+                                                className="text-xs text-blue-600 hover:text-blue-700 font-bold bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-lg transition-colors border border-blue-100 dark:border-blue-800/40"
                                             >
-                                                {opt.label}
+                                                + 添加新选项
                                             </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {formData.options.map((opt, idx) => (
+                                                <div key={idx} className="flex gap-2 group/opt">
+                                                    <div className="w-10 h-10 shrink-0 flex items-center justify-center font-bold bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700">
+                                                        {opt.label}
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        value={opt.value}
+                                                        placeholder={`选项 ${opt.label} 的描述内容...`}
+                                                        onChange={(e) => {
+                                                            const newOpts = [...formData.options]
+                                                            newOpts[idx].value = e.target.value
+                                                            setFormData({ ...formData, options: newOpts })
+                                                        }}
+                                                        className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 outline-none rounded-xl transition-all text-sm text-gray-900 dark:text-gray-100 shadow-sm"
+                                                    />
+                                                    {formData.options.length > 2 && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newOpts = formData.options.filter((_, i) => i !== idx).map((o, i) => ({ ...o, label: String.fromCharCode(65 + i) }))
+                                                                setFormData({ ...formData, options: newOpts })
+                                                            }}
+                                                            className="p-2 text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover/opt:opacity-100"
+                                                        >
+                                                            <FiTrash2 className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-                            {/* Parse */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">答案解析 (可选)</label>
-                                <textarea
-                                    value={formData.parse}
-                                    onChange={(e) => setFormData({ ...formData, parse: e.target.value })}
-                                    rows={3}
-                                    placeholder="请输入题目解析内容..."
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 outline-none rounded-2xl transition-all"
-                                />
+                                {/* 3. Answer Settings */}
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">正确答案设定</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.options.map((opt) => {
+                                            const optValue = formData.type === 'judge' ? opt.value : opt.label;
+                                            const isSelected = formData.type === 'multiple' 
+                                                ? (formData.answer as string[]).includes(optValue)
+                                                : formData.answer === optValue;
+                                            
+                                            return (
+                                                <button
+                                                    key={opt.label}
+                                                    onClick={() => {
+                                                        if (formData.type === 'multiple') {
+                                                            const current = (formData.answer as string[])
+                                                            const newVal = current.includes(optValue)
+                                                                ? current.filter(v => v !== optValue)
+                                                                : [...current, optValue].sort()
+                                                            setFormData({ ...formData, answer: newVal })
+                                                        } else {
+                                                            setFormData({ ...formData, answer: optValue })
+                                                        }
+                                                    }}
+                                                    className={`min-w-[3.5rem] px-4 py-2 rounded-xl border-2 font-bold transition-all ${
+                                                        isSelected 
+                                                        ? 'bg-green-600 border-green-600 text-white shadow-md' 
+                                                        : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-400 hover:text-green-600 hover:border-green-200'
+                                                    }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* 4. Parse Settings */}
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">答案解析</label>
+                                    <textarea
+                                        value={formData.parse}
+                                        onChange={(e) => setFormData({ ...formData, parse: e.target.value })}
+                                        rows={4}
+                                        placeholder="请输入题目解析内容，解释考点及错误项..."
+                                        className="w-full p-4 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 outline-none rounded-2xl transition-all text-sm text-gray-900 dark:text-gray-100 shadow-sm resize-none"
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex gap-4 bg-gray-50/50 dark:bg-gray-800/50">
+                        {/* Footer Actions */}
+                        <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex gap-4 bg-gray-50 dark:bg-gray-800/80">
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="flex-1 py-3 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-800 rounded-2xl transition-colors"
+                                className="px-6 py-3 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl transition-colors"
                             >
                                 取消
                             </button>
-                            <button
-                                onClick={handleSave}
-                                className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2"
-                            >
-                                <FiSave /> 保存题目
-                            </button>
+                            <div className="flex-1 flex gap-3">
+                                <button
+                                    onClick={() => setPreviewQuestion({ ...formData } as any)}
+                                    className="flex-1 py-3 bg-white dark:bg-gray-800 border-2 border-blue-600/30 text-blue-600 dark:text-blue-400 font-bold rounded-2xl hover:border-blue-600 transition-all flex items-center justify-center gap-2 group"
+                                >
+                                    <FiEye className="w-5 h-5 group-hover:scale-110 transition-transform" /> 预览效果
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    className="flex-[2] py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 text-lg active:scale-[0.98]"
+                                >
+                                    <FiSave className="w-5 h-5" /> 完成并保存
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
