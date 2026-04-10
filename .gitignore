@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local scripts (含敏感密钥，不提交)
+/scripts
+
+# local backups
+/backup
