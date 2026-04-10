@@ -167,12 +167,12 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                                 <div
                                     key={optKey}
                                     onClick={() => handleSelectOption(optKey)}
-                                    className={`border-2 rounded-xl p-4 transition-all duration-200 flex items-center ${stateClass}`}
+                                    className={`border-2 rounded-xl p-4 transition-all duration-200 flex items-start ${stateClass}`}
                                 >
-                                    <div className={`shrink-0 w-6 h-6 rounded flex items-center justify-center mr-4 border ${checked ? 'bg-current border-current' : 'border-gray-300 dark:border-gray-600'}`}>
+                                    <div className={`shrink-0 w-6 h-6 rounded flex items-center justify-center mr-4 border mt-1 ${checked ? 'bg-current border-current' : 'border-gray-300 dark:border-gray-600'}`}>
                                         {checked && <FiCheckCircle className="w-4 h-4 text-white" />}
                                     </div>
-                                    <span className="font-medium text-lg min-w-[2rem] opacity-70">
+                                    <span className="font-medium text-lg min-w-[2rem] opacity-70 mt-0.5">
                                         {currentQ.type === 'judge' ? '' : `${opt.label}.`}
                                     </span>
                                     <span className="text-gray-700 dark:text-gray-300 leading-relaxed break-words flex-1 whitespace-pre-wrap">

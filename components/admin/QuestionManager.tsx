@@ -458,20 +458,20 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                         </div>
                                         <div className="space-y-3">
                                             {formData.options.map((opt, idx) => (
-                                                <div key={idx} className="flex gap-2 group/opt">
-                                                    <div className="w-10 h-10 shrink-0 flex items-center justify-center font-bold bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700">
+                                                <div key={idx} className="flex gap-2 group/opt items-start">
+                                                    <div className="w-10 h-10 shrink-0 flex items-center justify-center font-bold bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 mt-0.5">
                                                         {opt.label}
                                                     </div>
-                                                    <input
-                                                        type="text"
+                                                    <textarea
                                                         value={opt.value}
                                                         placeholder={`选项 ${opt.label} 的描述内容...`}
+                                                        rows={1}
                                                         onChange={(e) => {
                                                             const newOpts = [...formData.options]
                                                             newOpts[idx].value = e.target.value
                                                             setFormData({ ...formData, options: newOpts })
                                                         }}
-                                                        className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 outline-none rounded-xl transition-all text-sm text-gray-900 dark:text-gray-100 shadow-sm"
+                                                        className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 outline-none rounded-xl transition-all text-sm text-gray-900 dark:text-gray-100 shadow-sm min-h-[44px] resize-none"
                                                     />
                                                     {formData.options.length > 2 && (
                                                         <button 
@@ -479,7 +479,7 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                                                 const newOpts = formData.options.filter((_, i) => i !== idx).map((o, i) => ({ ...o, label: String.fromCharCode(65 + i) }))
                                                                 setFormData({ ...formData, options: newOpts })
                                                             }}
-                                                            className="p-2 text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover/opt:opacity-100"
+                                                            className="p-2 text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover/opt:opacity-100 mt-2"
                                                         >
                                                             <FiTrash2 className="w-4 h-4" />
                                                         </button>
@@ -615,7 +615,7 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                         return (
                                             <div 
                                                 key={opt.label}
-                                                className={`flex items-center p-4 rounded-xl border-2 transition-all ${
+                                                className={`flex items-start p-4 rounded-xl border-2 transition-all ${
                                                     isCorrect 
                                                     ? 'bg-green-50/50 dark:bg-green-900/10 border-green-500/50 shadow-sm' 
                                                     : 'border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20'
@@ -628,8 +628,8 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                                 }`}>
                                                     {opt.label}
                                                 </div>
-                                                <div className="text-gray-700 dark:text-gray-300 font-medium">{opt.value}</div>
-                                                {isCorrect && <FiCheck className="ml-auto text-green-500 w-6 h-6 shrink-0" />}
+                                                <div className="text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap pt-1.5">{opt.value}</div>
+                                                {isCorrect && <FiCheck className="ml-auto text-green-500 w-6 h-6 shrink-0 mt-2" />}
                                             </div>
                                         );
                                     })}

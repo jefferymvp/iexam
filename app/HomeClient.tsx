@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiPlayCircle, FiUsers, FiAward, FiBook, FiList, FiSettings } from 'react-icons/fi'
+import { FiPlayCircle, FiUsers, FiAward, FiBook, FiList, FiSettings, FiSearch } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
 import JoinOrg from '@/components/JoinOrg'
 
@@ -34,6 +34,7 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
 
     const [questionCount, setQuestionCount] = useState(10)
     const [maxQuestions, setMaxQuestions] = useState(0)
+    const [searchKeyword, setSearchKeyword] = useState('')
 
     // Init
     useEffect(() => {
@@ -78,19 +79,23 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
                 query = query.eq('type', selectedType)
             }
 
+            if (searchKeyword) {
+                query = query.ilike('title', `%${searchKeyword}%`)
+            }
+
             const { count } = await query
             const validCount = count || 0
             setMaxQuestions(validCount)
 
             if (validCount > 0) {
-                setQuestionCount(Math.min(10, validCount))
+                setQuestionCount(prev => Math.min(prev, validCount) || Math.min(10, validCount))
             } else {
                 setQuestionCount(0)
             }
         }
 
         updateMax()
-    }, [selectedBankId, selectedType])
+    }, [selectedBankId, selectedType, searchKeyword])
 
 
     const handleStartExam = () => {
@@ -108,7 +113,8 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
             bankId: selectedBankId,
             type: selectedType,
             mode: selectedMode,
-            count: questionCount.toString()
+            count: questionCount.toString(),
+            keyword: searchKeyword
         })
 
         router.push(`/exam?${queryParams.toString()}`)
@@ -242,9 +248,31 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
                     <div className="hidden sm:block border-t border-gray-100 dark:border-gray-700"></div>
 
                     {/* Question Count Slider */}
-                    <div className="space-y-4 bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                    <div className="space-y-4 bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-3xl border border-blue-100 dark:border-blue-900/30">
+                        {/* Keyword Filter */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider flex items-center">
+                                <span className="w-1.5 h-4 bg-blue-500 rounded-full mr-2"></span>
+                                关键字筛选练习 (可选)
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                    <FiSearch className="h-4 w-4 text-blue-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="输入题干关键字，如“链表”、“二叉树”..."
+                                    value={searchKeyword}
+                                    onChange={(e) => setSearchKeyword(e.target.value)}
+                                    className="block w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="border-t border-blue-100/50 dark:border-blue-900/30 my-2"></div>
+
                         <div className="flex justify-between items-end">
-                            <label className="text-base font-bold text-gray-900 dark:text-white">选择题目数量</label>
+                            <label className="text-base font-bold text-gray-900 dark:text-white">选择抽取题目数量</label>
                             <div className="bg-white dark:bg-gray-800 px-4 py-1.5 rounded-full border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 font-bold text-lg shadow-sm">
                                 {questionCount} <span className="text-sm font-normal text-gray-400 mx-1">/</span> {maxQuestions}
                             </div>

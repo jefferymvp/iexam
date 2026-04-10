@@ -1,10 +1,10 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ExamEngine from './ExamEngine'
-import { FiAlertCircle } from 'react-icons/fi'
+import { FiAlertCircle, FiSearch } from 'react-icons/fi'
 import Link from 'next/link'
 
-export default async function ExamPage({ searchParams }: { searchParams: { orgId?: string, bankId?: string, type?: string, mode?: string, count?: string } }) {
+export default async function ExamPage({ searchParams }: { searchParams: { orgId?: string, bankId?: string, type?: string, mode?: string, count?: string, keyword?: string } }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -18,6 +18,7 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
     const type = tmpParams.type || 'all';
     const mode = tmpParams.mode || 'show';
     const count = parseInt(tmpParams.count as string) || 10;
+    const keyword = tmpParams.keyword || '';
 
     if (!orgId || !bankId) {
         redirect('/')
@@ -66,6 +67,10 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
 
     if (type !== 'all') {
         query = query.eq('type', type)
+    }
+
+    if (keyword) {
+        query = query.ilike('title', `%${keyword}%`)
     }
 
     const { data: allQuestions } = await query;

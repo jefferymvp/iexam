@@ -253,12 +253,12 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                                 <div
                                     key={optKey}
                                     onClick={() => handleSelectOption(optKey)}
-                                    className={`border-2 rounded-2xl p-4 sm:p-5 transition-all duration-200 flex items-center ${stateClass}`}
+                                    className={`border-2 rounded-2xl p-4 sm:p-5 transition-all duration-200 flex items-start ${stateClass}`}
                                 >
-                                    <div className={`shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center mr-3 sm:mr-4 border-2 transition-colors ${indicatorClass}`}>
+                                    <div className={`shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center mr-3 sm:mr-4 border-2 transition-colors mt-0.5 ${indicatorClass}`}>
                                         <FiCheckCircle className="w-4 h-4 sm:w-5 sm:h-5 opacity-100" />
                                     </div>
-                                    <span className="font-bold text-base sm:text-lg min-w-[1.5rem] sm:min-w-[2rem] opacity-70">
+                                    <span className="font-bold text-base sm:text-lg min-w-[1.5rem] sm:min-w-[2rem] opacity-70 mt-0.5 sm:mt-0">
                                         {currentQ.type === 'judge' ? '' : `${opt.label}.`}
                                     </span>
                                     <span className="font-medium text-sm sm:text-base leading-relaxed break-words flex-1 dark:text-gray-200 whitespace-pre-wrap">
