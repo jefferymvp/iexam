@@ -49,6 +49,14 @@ export async function POST(req: Request) {
         - ❌ 禁止：⌈x⌉、⌊x⌋、≠、≤、≥ 等 Unicode 符号
         - ✅ 正确：$\\lceil x \\rceil$、$\\lfloor x \\rfloor$、$\\neq$、$\\leq$、$\\geq$
     - **范围表示**：使用"-"或"至"，**严禁使用波浪线"~"**。
+    - **代码片段**：所有编程代码（C++、Python、Java 等）**必须**使用 Markdown 代码围栏格式，即用三个反引号包裹，并标注语言名称。例如：
+
+\`\`\`cpp
+std::unique_ptr<int> ptr(new int(10));
+\`\`\`
+
+        - ❌ 严禁使用 \\text{代码} 或 \\texttt{代码} 来展示代码，这会导致渲染失败。
+        - ❌ 严禁将代码放在 $ 数学公式定界符内。
 4. **篇幅控制**：解析和扩展应控制在适中篇幅，避免冗长，总字数不要超过1000字。
 
 `;
@@ -90,6 +98,10 @@ export async function POST(req: Request) {
 
         if (data && data.choices && data.choices.length > 0) {
             let aiResponse = data.choices[0].message?.content || '';
+
+            // 后处理：将 AI 误用的 \text{...} 或 \texttt{...} 转换为 markdown 行内代码，防止渲染异常
+            // 例如：\text{std::unique_ptr<int>} => `std::unique_ptr<int>`
+            aiResponse = aiResponse.replace(/\\texttt?\{([^}]*)\}/g, '`$1`');
 
             // Save to database immediate if result is valid
             if (aiResponse && questionId) {
