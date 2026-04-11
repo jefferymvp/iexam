@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText, FiLogOut, FiAlertTriangle } from 'react-icons/fi'
+import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText, FiLogOut, FiAlertTriangle, FiCpu, FiRefreshCw } from 'react-icons/fi'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -32,6 +32,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
     const [isFinished, setIsFinished] = useState(false)
     const [score, setScore] = useState(0)
     const [isBugModalOpen, setIsBugModalOpen] = useState(false)
+    const [isAiLoading, setIsAiLoading] = useState(false)
 
     const supabase = createClient()
     const currentQ = questions[currentIndex]
@@ -48,6 +49,43 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
             }
         } else {
             setSelectedAnswers({ ...selectedAnswers, [currentQ.id]: value })
+        }
+    }
+
+    const handleGenerateAIParse = async () => {
+        if (currentQ.parse && currentQ.parse.trim().length > 0) {
+            const confirm = window.confirm("当前题目已有解析，是否重新生成覆盖？")
+            if (!confirm) return
+        }
+
+        setIsAiLoading(true)
+        try {
+            const res = await fetch('/api/ai-parse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: currentQ.title,
+                    type: currentQ.type,
+                    options: safeParse(currentQ.options, [])
+                })
+            })
+            const data = await res.json()
+            if (res.ok && data.result) {
+                const newParse = data.result
+                const { error } = await supabase.from('questions').update({ parse: newParse }).eq('id', currentQ.id)
+                if (error) {
+                    console.error("保存解析失败:", error)
+                    alert("保存解析时发生错误，请稍后再试。")
+                }
+                currentQ.parse = newParse // Optimistically update local view
+            } else {
+                alert("生成解析失败: " + (data.error || "未知网络错误"))
+            }
+        } catch (e) {
+            console.error(e)
+            alert("请求发生异常。")
+        } finally {
+            setIsAiLoading(false)
         }
     }
 
@@ -272,17 +310,27 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
 
                 {hasSubmittedCurrent && (
                     <div className="bg-gray-50/80 dark:bg-gray-750/80 p-5 sm:p-8 border-t border-gray-100 dark:border-gray-700 animate-in slide-in-from-top-4">
-                        <div className="flex items-center mb-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-3">
-                                <span className="text-blue-500">💡</span>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-3">
+                                    <span className="text-blue-500">💡</span>
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">答案解析</h3>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">答案解析</h3>
+                            <button
+                                onClick={handleGenerateAIParse}
+                                disabled={isAiLoading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors disabled:opacity-50 shadow-sm"
+                            >
+                                {isAiLoading ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiCpu className="w-4 h-4" />}
+                                <span>{isAiLoading ? '生成中...' : '生成智能解析'}</span>
+                            </button>
                         </div>
                         <div className="ml-11">
                             <p className="font-mono text-base sm:text-lg mb-4 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 inline-block px-3 py-1 rounded-lg">
                                 正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}
                             </p>
-                            <div className="prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed [overflow-wrap:anywhere]">
+                            <div className={`prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed [overflow-wrap:anywhere] transition-all duration-300 ${isAiLoading ? 'opacity-50 animate-pulse' : ''}`}>
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
