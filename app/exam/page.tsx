@@ -43,6 +43,14 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
         )
     }
 
+    // Fetch user role from profiles
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+    const userRole = profile?.role || 'user'
+
     // Next step: verify the bank is associated with the org and is active.
     const { data: bankAccess } = await supabase
         .from('organization_banks')
@@ -93,5 +101,5 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
     }
     const questions = shuffled.slice(0, count)
 
-    return <ExamEngine initialQuestions={questions} userId={user.id} mode={mode} />
+    return <ExamEngine initialQuestions={questions} userId={user.id} mode={mode} userRole={userRole} />
 }

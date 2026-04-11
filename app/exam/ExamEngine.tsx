@@ -6,6 +6,8 @@ import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileTex
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import BugReportModal from '@/components/exam/BugReportModal'
 
 const safeParse = (val: any, fallback: any) => {
@@ -21,11 +23,12 @@ const safeParse = (val: any, fallback: any) => {
 interface ExamEngineProps {
     initialQuestions: any[]
     userId: string
+    userRole: string
     mode?: string // 'show' = practice, 'hide' = formal exam
 }
 
-export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: ExamEngineProps) {
-    const [questions] = useState(initialQuestions)
+export default function ExamEngine({ initialQuestions, userId, userRole, mode = 'show' }: ExamEngineProps) {
+    const [questions, setQuestions] = useState(initialQuestions)
     const [currentIndex, setCurrentIndex] = useState(0)
     const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | string[]>>({})
     const [showAnswerForQ, setShowAnswerForQ] = useState<Record<string, boolean>>({})
@@ -53,7 +56,14 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
     }
 
     const handleGenerateAIParse = async () => {
-        if (currentQ.parse && currentQ.parse.trim().length > 0) {
+        const hasExistingParse = currentQ.parse && currentQ.parse.trim().length > 0;
+        
+        if (hasExistingParse && userRole !== 'admin') {
+            alert("该题目已有解析，只有管理员可以重新生成内容。")
+            return
+        }
+
+        if (hasExistingParse) {
             const confirm = window.confirm("当前题目已有解析，是否重新生成覆盖？")
             if (!confirm) return
         }
@@ -64,6 +74,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    questionId: currentQ.id,
                     title: currentQ.title,
                     type: currentQ.type,
                     options: safeParse(currentQ.options, [])
@@ -72,12 +83,9 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
             const data = await res.json()
             if (res.ok && data.result) {
                 const newParse = data.result
-                const { error } = await supabase.from('questions').update({ parse: newParse }).eq('id', currentQ.id)
-                if (error) {
-                    console.error("保存解析失败:", error)
-                    alert("保存解析时发生错误，请稍后再试。")
-                }
-                currentQ.parse = newParse // Optimistically update local view
+                const updatedQuestions = [...questions]
+                updatedQuestions[currentIndex] = { ...currentQ, parse: newParse }
+                setQuestions(updatedQuestions)
             } else {
                 alert("生成解析失败: " + (data.error || "未知网络错误"))
             }
@@ -246,7 +254,8 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                         </span>
                         <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-relaxed [overflow-wrap:anywhere]">
                             <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[[rehypeKatex, { output: 'html' }]]}
                                 components={{
                                     p: ({ node, ...props }: any) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
                                 }}
@@ -319,11 +328,14 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                             </div>
                             <button
                                 onClick={handleGenerateAIParse}
-                                disabled={isAiLoading}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors disabled:opacity-50 shadow-sm"
+                                disabled={isAiLoading || (!!currentQ.parse && currentQ.parse.trim().length > 0 && userRole !== 'admin')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                title={currentQ.parse && currentQ.parse.trim().length > 0 && userRole !== 'admin' ? "只有管理员可以重新生成解析" : ""}
                             >
                                 {isAiLoading ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiCpu className="w-4 h-4" />}
-                                <span>{isAiLoading ? '生成中...' : '生成智能解析'}</span>
+                                <span>
+                                    {isAiLoading ? '生成中...' : (currentQ.parse && currentQ.parse.trim().length > 0 && userRole !== 'admin' ? '仅限管理覆盖' : '生成智能解析')}
+                                </span>
                             </button>
                         </div>
                         <div className="ml-11">
@@ -332,7 +344,8 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                             </p>
                             <div className={`prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed [overflow-wrap:anywhere] transition-all duration-300 ${isAiLoading ? 'opacity-50 animate-pulse' : ''}`}>
                                 <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
+                                    remarkPlugins={[remarkGfm, remarkMath]}
+                                    rehypePlugins={[[rehypeKatex, { output: 'html' }]]}
                                     components={{
                                         p: ({ node, ...props }: any) => <p className="mb-4 last:mb-0" {...props} />,
                                         table: ({ node, ...props }: any) => (
@@ -345,7 +358,7 @@ export default function ExamEngine({ initialQuestions, userId, mode = 'show' }: 
                                         td: ({ node, ...props }: any) => <td className="border border-gray-200 dark:border-gray-700 px-4 py-2" {...props} />,
                                     }}
                                 >
-                                    {currentQ.parse || "暂无详细解析内容。"}
+                                    {(currentQ.parse || "暂无详细解析内容。").replace(/~/g, '至')}
                                 </ReactMarkdown>
                             </div>
                         </div>
