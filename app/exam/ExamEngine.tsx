@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { FiCheckCircle, FiXCircle, FiArrowRight, FiArrowLeft, FiClock, FiFileText, FiLogOut, FiAlertTriangle, FiCpu, FiRefreshCw } from 'react-icons/fi'
 import Link from 'next/link'
@@ -36,6 +36,15 @@ export default function ExamEngine({ initialQuestions, userId, userRole, mode = 
     const [score, setScore] = useState(0)
     const [isBugModalOpen, setIsBugModalOpen] = useState(false)
     const [isAiLoading, setIsAiLoading] = useState(false)
+    const [isStreamingEnabled, setIsStreamingEnabled] = useState(true)
+    const parseEndRef = useRef<HTMLDivElement>(null)
+
+    // 自动跟随滚动条
+    useEffect(() => {
+        if (isAiLoading && isStreamingEnabled) {
+            parseEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        }
+    }, [questions[currentIndex]?.parse, isAiLoading, isStreamingEnabled, currentIndex])
 
     const supabase = createClient()
     const currentQ = questions[currentIndex]
@@ -77,17 +86,53 @@ export default function ExamEngine({ initialQuestions, userId, userRole, mode = 
                     questionId: currentQ.id,
                     title: currentQ.title,
                     type: currentQ.type,
-                    options: safeParse(currentQ.options, [])
+                    options: safeParse(currentQ.options, []),
+                    stream: isStreamingEnabled
                 })
             })
-            const data = await res.json()
-            if (res.ok && data.result) {
-                const newParse = data.result
-                const updatedQuestions = [...questions]
-                updatedQuestions[currentIndex] = { ...currentQ, parse: newParse }
-                setQuestions(updatedQuestions)
-            } else {
+
+            if (!res.ok) {
+                const data = await res.json()
                 alert("生成解析失败: " + (data.error || "未知网络错误"))
+                return
+            }
+
+            if (isStreamingEnabled && res.body) {
+                const reader = res.body.getReader()
+                const decoder = new TextDecoder()
+                let accumulated = ''
+
+                // 开始流式前清空当前解析
+                setQuestions(prev => {
+                    const next = [...prev]
+                    next[currentIndex] = { ...next[currentIndex], parse: '' }
+                    return next
+                })
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+                    
+                    const text = decoder.decode(value, { stream: true })
+                    accumulated += text
+
+                    // 实时更新解析内容
+                    setQuestions(prev => {
+                        const next = [...prev]
+                        next[currentIndex] = { ...next[currentIndex], parse: accumulated }
+                        return next
+                    })
+                }
+            } else {
+                const data = await res.json()
+                if (data.result) {
+                    const newParse = data.result
+                    const updatedQuestions = [...questions]
+                    updatedQuestions[currentIndex] = { ...currentQ, parse: newParse }
+                    setQuestions(updatedQuestions)
+                } else {
+                    alert("生成解析失败: 未获取到结果")
+                }
             }
         } catch (e) {
             console.error(e)
@@ -326,6 +371,21 @@ export default function ExamEngine({ initialQuestions, userId, userRole, mode = 
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">答案解析</h3>
                             </div>
+                        <div className="flex items-center gap-3">
+                            <label className="flex items-center cursor-pointer group" title="开启后解析将逐字显示">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={isStreamingEnabled}
+                                        onChange={() => setIsStreamingEnabled(!isStreamingEnabled)}
+                                    />
+                                    <div className={`block w-10 h-6 rounded-full transition-colors ${isStreamingEnabled ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 transform ${isStreamingEnabled ? 'translate-x-4' : 'translate-x-0'} shadow-sm`}></div>
+                                </div>
+                                <span className="ml-2 text-xs font-semibold text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors">流式输出</span>
+                            </label>
+                            
                             <button
                                 onClick={handleGenerateAIParse}
                                 disabled={isAiLoading || (!!currentQ.parse && currentQ.parse.trim().length > 0 && userRole !== 'admin')}
@@ -334,15 +394,16 @@ export default function ExamEngine({ initialQuestions, userId, userRole, mode = 
                             >
                                 {isAiLoading ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiCpu className="w-4 h-4" />}
                                 <span>
-                                    {isAiLoading ? '生成中...' : (currentQ.parse && currentQ.parse.trim().length > 0 && userRole !== 'admin' ? '仅限管理覆盖' : '生成智能解析')}
+                                    {isAiLoading ? (isStreamingEnabled ? '正在构思...' : '生成中...') : (currentQ.parse && currentQ.parse.trim().length > 0 && userRole !== 'admin' ? '仅限管理覆盖' : '生成智能解析')}
                                 </span>
                             </button>
+                        </div>
                         </div>
                         <div className="ml-11">
                             <p className="font-mono text-base sm:text-lg mb-4 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 inline-block px-3 py-1 rounded-lg">
                                 正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}
                             </p>
-                            <div className={`prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed [overflow-wrap:anywhere] transition-all duration-300 ${isAiLoading ? 'opacity-50 animate-pulse' : ''}`}>
+                            <div className={`prose prose-sm sm:prose-base prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed [overflow-wrap:anywhere] transition-all duration-300 ${(isAiLoading && !isStreamingEnabled) ? 'opacity-50 animate-pulse' : ''}`}>
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm, remarkMath]}
                                     rehypePlugins={[[rehypeKatex, { output: 'html' }]]}
@@ -358,9 +419,18 @@ export default function ExamEngine({ initialQuestions, userId, userRole, mode = 
                                         td: ({ node, ...props }: any) => <td className="border border-gray-200 dark:border-gray-700 px-4 py-2" {...props} />,
                                     }}
                                 >
-                                    {(currentQ.parse || "暂无详细解析内容。").replace(/~/g, '至')}
+                                    {(currentQ.parse || "暂无详细解析内容。")
+                                        .replace(/~/g, '至')
+                                        .replace(/\\texttt?\{([^}]*)\}/g, '`$1`')
+                                        .replace(/√\s*([0-9a-zA-Z]+)/g, '$\\sqrt{$1}$')
+                                        .replace(/√(?![0-9a-zA-Z])/g, '\\sqrt')
+                                        .replace(/(?<!\$)\\boxed\{([A-Z0-9]+)\}(?!\$)/g, '$\\boxed{$1}$')
+                                        .replace(/(?<!\$)\\boxed\{(正确|错误)\}(?!\$)/g, '$\\boxed{$1}$')
+                                        .replace(/(?<!\$)\\boxed\{\\text\{(正确|错误)\}\}(?!\$)/g, '$\\boxed{\\text{$1}}$')
+                                    }
                                 </ReactMarkdown>
                             </div>
+                            <div ref={parseEndRef} />
                         </div>
                     </div>
                 )}
