@@ -37,6 +37,12 @@ export async function POST(req: Request) {
             }
         }
 
+        // 检查题干是否包含图片元素（Markdown 或 HTML）
+        const hasImages = /!\[.*?\]\(.*?\)/.test(title || '') || /<img[^>]*>/.test(title || '');
+        if (hasImages) {
+            return NextResponse.json({ error: '暂不支持图片解析。' }, { status: 400 });
+        }
+
         // Remove markdown images like ![...](...) and html images <img ...>
         const cleanTitle = (title || '').replace(/!\[.*?\]\(.*?\)/g, '').replace(/<img[^>]*>/g, '').trim();
 
@@ -47,15 +53,16 @@ export async function POST(req: Request) {
 2. **解析内容**：请针对题目提供专业、准确的解析，逻辑清晰，语言精练。
 3. **知识扩展**：这部分必须作为**完全独立的板块**，进行相关知识点的纵向深挖或横向关联（如核心原理、底层逻辑、易错陷阱等）。**绝对严禁在此部分再次提及、暗示或显示本题的答案**。需纯粹地讲透知识本身，可出同类型的题目说明。
 4. **格式规范**（极为重要，必须严格遵守）：
-    - **数学表达式**：所有数学符号、变量、公式、计算式、**以及 \boxed{...} 答案框**，**必须**包裹在 $（行内）或 $$（块级）定界符中。即使是简单的 $n=4$ 或 $\\boxed{B}$ 也要包裹。
+    - **数学表达式**：**所有**数学符号、变量名（即使是单个字母如 $i$、$n$、$x$）、公式、等式（如 $i=1$、$i-1$、$2i+1$）都**必须**使用 $（行内）或 $$（块级）定界符包裹。绝不能让任何数学变量以纯文本形式出现在中文句子中。
+    - **禁用样式**：**绝对严禁使用 \\boxed{} 或 $\\boxed{B}$ 等带框格式来突出显示答案。**
     - **LaTeX指令**：**严禁直接输出 Unicode 数学字符**，必须使用对应的 LaTeX 指令：
         - ❌ 禁止：⌈x⌉、⌊x⌋、≠、≤、≥ 等 Unicode 符号
         - ✅ 正确：$\\lceil x \\rceil$、$\\lfloor x \\rfloor$、$\\neq$、$\\leq$、$\\geq$
     - **范围表示**：使用"-"或"至"，**严禁使用波浪线"~"**。
     - **根号表示**：必须使用 $\\sqrt{x}$，**严禁使用 Unicode 符号 "√"**。
     - **示例对照**：
-        - ❌ 错误：⌈x⌉、√N、a ≤ b、1~10
-        - ✅ 正确：$\\lceil x \\rceil$、$\\sqrt{N}$、 $a \\leq b$、1-10
+        - ❌ 错误：结点i、i为偶数、其兄弟为i+1、⌈x⌉、√N、1~10
+        - ✅ 正确：结点 $i$、$i$ 为偶数、其兄弟为 $i+1$、$\\lceil x \\rceil$、$\\sqrt{N}$、1-10
     - **代码片段**：所有编程代码（C++、Python、Java 等）**必须**使用 Markdown 代码围栏格式，即用三个反引号包裹，并标注语言名称。例如：
 
 \`\`\`cpp
@@ -70,8 +77,18 @@ std::unique_ptr<int> ptr(new int(10));
         if (type === 'judge') {
             prompt = `你是一个专业的考试辅导专家。请为以下判断题生成解析，并进行一定的知识扩展。${commonInstructions}\n\n题目：${cleanTitle}`;
         } else {
-            const cleanOptions = options ? JSON.stringify(options).replace(/!\[.*?\]\(.*?\)/g, '').replace(/<img[^>]*>/g, '') : '';
-            prompt = `你是一个专业的考试辅导专家。请为选择题生成解析，分析正确项并提供扩展。${commonInstructions}\n\n题目：${cleanTitle}\n选项：${cleanOptions}`;
+            let formattedOptions = '';
+            if (Array.isArray(options)) {
+                formattedOptions = options
+                    .map((opt: any) => {
+                        // 兼容字段名：优先使用 value（前端渲染字段），其次使用 content
+                        const rawContent = opt.value || opt.content || '';
+                        const content = rawContent.replace(/!\[.*?\]\(.*?\)/g, '').replace(/<img[^>]*>/g, '').trim();
+                        return `${opt.label || ''}. ${content}`;
+                    })
+                    .join('\n');
+            }
+            prompt = `你是一个专业的考试辅导专家。请为选择题生成解析，分析正确项并提供扩展。${commonInstructions}\n\n题目：${cleanTitle}\n选项：\n${formattedOptions}`;
         }
 
         const apiKey = process.env.JIUTIAN_APK_KEY;
@@ -80,7 +97,7 @@ std::unique_ptr<int> ptr(new int(10));
         }
 
         const payload = {
-            "model": "jiutian-lan-comv3",
+            "model": "deepseek-v3",
             "messages": [{ "role": "user", "content": prompt }],
             "stream": stream
         };
