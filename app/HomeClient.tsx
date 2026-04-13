@@ -35,6 +35,7 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
     const [questionCount, setQuestionCount] = useState(10)
     const [maxQuestions, setMaxQuestions] = useState(0)
     const [searchKeyword, setSearchKeyword] = useState('')
+    const [parseFilter, setParseFilter] = useState('all')
 
     // Init
     useEffect(() => {
@@ -83,6 +84,12 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
                 query = query.ilike('title', `%${searchKeyword}%`)
             }
 
+            if (parseFilter === 'with') {
+                query = query.not('parse', 'is', null).neq('parse', '')
+            } else if (parseFilter === 'without') {
+                query = query.or('parse.is.null,parse.eq.""')
+            }
+
             const { count } = await query
             const validCount = count || 0
             setMaxQuestions(validCount)
@@ -95,7 +102,7 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
         }
 
         updateMax()
-    }, [selectedBankId, selectedType, searchKeyword])
+    }, [selectedBankId, selectedType, searchKeyword, parseFilter])
 
 
     const handleStartExam = () => {
@@ -114,7 +121,8 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
             type: selectedType,
             mode: selectedMode,
             count: questionCount.toString(),
-            keyword: searchKeyword
+            keyword: searchKeyword,
+            parseFilter: parseFilter
         })
 
         router.push(`/exam?${queryParams.toString()}`)
@@ -267,6 +275,22 @@ export default function HomeClient({ user, initialOrgs }: { user: any, initialOr
                                     className="block w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                 />
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider flex items-center">
+                                <span className="w-1.5 h-4 bg-indigo-500 rounded-full mr-2"></span>
+                                解析内容筛选 (可选)
+                            </label>
+                            <select
+                                value={parseFilter}
+                                onChange={(e) => setParseFilter(e.target.value)}
+                                className="block w-full px-4 py-3 bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                            >
+                                <option value="all">所有题目 (包含有解析和无解析)</option>
+                                <option value="with">仅含解析 (优先复习有详解的题目)</option>
+                                <option value="without">仅无解析 (筛选出尚未补全解析的题目)</option>
+                            </select>
                         </div>
 
                         <div className="border-t border-blue-100/50 dark:border-blue-900/30 my-2"></div>

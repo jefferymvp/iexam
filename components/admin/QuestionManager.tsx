@@ -5,6 +5,10 @@ import { createClient } from '@/utils/supabase/client'
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiImage, FiArrowLeft, FiCheck, FiX, FiSave, FiChevronLeft, FiChevronRight, FiEye, FiCheckCircle, FiInfo } from 'react-icons/fi'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import { MdEditor, ToolbarNames } from 'md-editor-rt'
+import 'md-editor-rt/lib/style.css'
 
 interface QuestionManagerProps {
     bankId: string
@@ -346,7 +350,7 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
             {/* Edit Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[95vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-gray-100 dark:border-gray-800">
+                    <div className="bg-white dark:bg-gray-900 w-full max-w-4xl max-h-[95vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-gray-100 dark:border-gray-800">
                         {/* Header */}
                         <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
                             <div className="flex items-center gap-3">
@@ -365,53 +369,51 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                             </button>
                         </div>
 
-                        {/* Main Body - Split Layout */}
-                        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                        {/* Main Body - Vertical Layout */}
+                        <div className="flex-1 overflow-y-auto p-6 sm:p-10 bg-white dark:bg-gray-950 space-y-12">
                             
-                            {/* Left Column: Stem Editing */}
-                            <div className="flex-1 p-8 overflow-y-auto border-r border-gray-100 dark:border-gray-800 space-y-6 bg-white dark:bg-gray-950">
-                                <div className="space-y-4 h-full flex flex-col">
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-lg">
-                                            <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
-                                            题干内容
-                                        </div>
-                                        <button 
-                                            onClick={() => imageInputRef.current?.click()}
-                                            disabled={uploadingImage}
-                                            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-2 font-medium text-sm border border-blue-100 dark:border-blue-800"
-                                        >
-                                            <FiImage className="w-4 h-4" /> {uploadingImage ? '上传中...' : '插入图片'}
-                                        </button>
-                                        <input 
-                                            type="file" 
-                                            hidden 
-                                            ref={imageInputRef} 
-                                            accept="image/*" 
-                                            onChange={handleImageUpload} 
-                                        />
+                            {/* Section 1: Stem Editing */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-lg">
+                                        <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
+                                        题干内容
                                     </div>
-                                    <div className="flex-1 flex flex-col min-h-[400px]">
-                                        <textarea
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                            placeholder="在此输入题目内容，支持图片 URL 或 Markdown 链接..."
-                                            className="flex-1 w-full p-6 text-lg bg-gray-50/50 dark:bg-gray-900/50 border-2 border-gray-100 dark:border-gray-800 focus:border-blue-500 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 outline-none rounded-2xl transition-all resize-none leading-relaxed text-gray-900 dark:text-gray-100"
-                                        />
-                                        <div className="mt-3 text-xs text-gray-400 flex items-center gap-2">
-                                            <FiInfo className="shrink-0" />
-                                            小技巧：您可以直接将图片链接或 Markdown 图片格式（![图片](链接)）粘贴至此处。
-                                        </div>
-                                    </div>
+                                    <button 
+                                        onClick={() => imageInputRef.current?.click()}
+                                        disabled={uploadingImage}
+                                        className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-2 font-medium text-sm border border-blue-100 dark:border-blue-800"
+                                    >
+                                        <FiImage className="w-4 h-4" /> {uploadingImage ? '上传中...' : '插入图片'}
+                                    </button>
+                                    <input 
+                                        type="file" 
+                                        hidden 
+                                        ref={imageInputRef} 
+                                        accept="image/*" 
+                                        onChange={handleImageUpload} 
+                                    />
+                                </div>
+                                <textarea
+                                    value={formData.title}
+                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    placeholder="在此输入题目内容，支持图片 URL 或 Markdown 链接..."
+                                    className="w-full p-6 text-lg bg-gray-50/50 dark:bg-gray-900/50 border-2 border-gray-100 dark:border-gray-800 focus:border-blue-500 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 outline-none rounded-2xl transition-all resize-none leading-relaxed text-gray-900 dark:text-gray-100 min-h-[160px]"
+                                />
+                                <div className="mt-2 text-xs text-gray-400 flex items-center gap-2">
+                                    <FiInfo className="shrink-0" />
+                                    小技巧：可以直接粘贴图片链接或 Markdown 格式图片。
                                 </div>
                             </div>
 
-                            {/* Right Column: Config sidebar */}
-                            <div className="w-full md:w-[460px] p-8 overflow-y-auto bg-gray-50/30 dark:bg-gray-900/20 space-y-8 shrink-0">
-                                
-                                {/* 1. Type Selection */}
+                            {/* Section 2: Question Type & Answer Settings */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                {/* Type Selection */}
                                 <div className="space-y-4">
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">题目类型</label>
+                                    <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-lg">
+                                        <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
+                                        题目类型
+                                    </div>
                                     <div className="flex gap-2 p-1.5 bg-gray-100 dark:bg-gray-800 rounded-2xl">
                                         {['single', 'multiple', 'judge'].map((type) => (
                                             <button
@@ -441,58 +443,12 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                     </div>
                                 </div>
 
-                                {/* 2. Options Settings */}
-                                {formData.type !== 'judge' && (
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-end">
-                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">备选项配置</label>
-                                            <button 
-                                                onClick={() => {
-                                                    const nextLabel = String.fromCharCode(65 + formData.options.length);
-                                                    setFormData(prev => ({ ...prev, options: [...prev.options, { label: nextLabel, value: '' }] }))
-                                                }}
-                                                className="text-xs text-blue-600 hover:text-blue-700 font-bold bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-lg transition-colors border border-blue-100 dark:border-blue-800/40"
-                                            >
-                                                + 添加新选项
-                                            </button>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {formData.options.map((opt, idx) => (
-                                                <div key={idx} className="flex gap-2 group/opt items-start">
-                                                    <div className="w-10 h-10 shrink-0 flex items-center justify-center font-bold bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 mt-0.5">
-                                                        {opt.label}
-                                                    </div>
-                                                    <textarea
-                                                        value={opt.value}
-                                                        placeholder={`选项 ${opt.label} 的描述内容...`}
-                                                        rows={1}
-                                                        onChange={(e) => {
-                                                            const newOpts = [...formData.options]
-                                                            newOpts[idx].value = e.target.value
-                                                            setFormData({ ...formData, options: newOpts })
-                                                        }}
-                                                        className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 outline-none rounded-xl transition-all text-sm text-gray-900 dark:text-gray-100 shadow-sm min-h-[44px] resize-none"
-                                                    />
-                                                    {formData.options.length > 2 && (
-                                                        <button 
-                                                            onClick={() => {
-                                                                const newOpts = formData.options.filter((_, i) => i !== idx).map((o, i) => ({ ...o, label: String.fromCharCode(65 + i) }))
-                                                                setFormData({ ...formData, options: newOpts })
-                                                            }}
-                                                            className="p-2 text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover/opt:opacity-100 mt-2"
-                                                        >
-                                                            <FiTrash2 className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 3. Answer Settings */}
+                                {/* Answer Selection */}
                                 <div className="space-y-4">
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">正确答案设定</label>
+                                    <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-lg">
+                                        <span className="w-1.5 h-6 bg-green-500 rounded-full"></span>
+                                        正确答案
+                                    </div>
                                     <div className="flex flex-wrap gap-2">
                                         {formData.options.map((opt) => {
                                             const optValue = formData.type === 'judge' ? opt.value : opt.label;
@@ -526,16 +482,82 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                         })}
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* 4. Parse Settings */}
+                            {/* Section 3: Options (if not judge) */}
+                            {formData.type !== 'judge' && (
                                 <div className="space-y-4">
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">答案解析</label>
-                                    <textarea
-                                        value={formData.parse}
-                                        onChange={(e) => setFormData({ ...formData, parse: e.target.value })}
-                                        rows={4}
-                                        placeholder="请输入题目解析内容，解释考点及错误项..."
-                                        className="w-full p-4 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 outline-none rounded-2xl transition-all text-sm text-gray-900 dark:text-gray-100 shadow-sm resize-none"
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-lg">
+                                            <span className="w-1.5 h-6 bg-purple-500 rounded-full"></span>
+                                            选项配置
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                const nextLabel = String.fromCharCode(65 + formData.options.length);
+                                                setFormData(prev => ({ ...prev, options: [...prev.options, { label: nextLabel, value: '' }] }))
+                                            }}
+                                            className="text-xs text-blue-600 hover:text-blue-700 font-bold bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg transition-colors border border-blue-100 dark:border-blue-800/40"
+                                        >
+                                            + 添加新选项
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {formData.options.map((opt, idx) => (
+                                            <div key={idx} className="flex gap-2 group/opt items-start bg-gray-50/50 dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                                <div className="w-10 h-10 shrink-0 flex items-center justify-center font-bold bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+                                                    {opt.label}
+                                                </div>
+                                                <textarea
+                                                    value={opt.value}
+                                                    placeholder={`选项 ${opt.label} 内容...`}
+                                                    rows={2}
+                                                    onChange={(e) => {
+                                                        const newOpts = [...formData.options]
+                                                        newOpts[idx].value = e.target.value
+                                                        setFormData({ ...formData, options: newOpts })
+                                                    }}
+                                                    className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-500 outline-none rounded-xl transition-all text-sm text-gray-900 dark:text-gray-100 shadow-sm resize-none"
+                                                />
+                                                {formData.options.length > 2 && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            const newOpts = formData.options.filter((_, i) => i !== idx).map((o, i) => ({ ...o, label: String.fromCharCode(65 + i) }))
+                                                            setFormData({ ...formData, options: newOpts })
+                                                        }}
+                                                        className="p-2 text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover/opt:opacity-100 mt-1"
+                                                    >
+                                                        <FiTrash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Section 4: Analysis */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-lg">
+                                    <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
+                                    答案解析
+                                </div>
+                                <div className="border-2 border-transparent focus-within:border-blue-500 rounded-2xl overflow-hidden transition-all shadow-sm">
+                                    <MdEditor
+                                        modelValue={formData.parse}
+                                        onChange={(val) => setFormData({ ...formData, parse: val })}
+                                        placeholder="在此输入题目解析内容，支持 Markdown 和 LaTeX 公式..."
+                                        language="zh-CN"
+                                        preview={false}
+                                        theme={(typeof window !== 'undefined' && document.documentElement.classList.contains('dark')) ? 'dark' : 'light'}
+                                        toolbars={[
+                                            'bold', 'italic', 'underline', 'strikeThrough', '-',
+                                            'title', 'sub', 'sup', 'quote', 'unorderedList', 'orderedList', 'task', '-',
+                                            'codeRow', 'code', 'link', 'image', 'table', 'katex', '-',
+                                            'revoke', 'next', 'save', '=', 'pageFullscreen', 'fullscreen', 'preview', 'htmlPreview'
+                                        ] as ToolbarNames[]}
+                                        style={{ height: '360px', borderRadius: '1rem' }}
+                                        noImgUploadInEditor={true}
                                     />
                                 </div>
                             </div>
@@ -596,7 +618,8 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                     </span>
                                     <div className="prose prose-lg dark:prose-invert max-w-none text-gray-900 dark:text-white leading-relaxed [overflow-wrap:anywhere]">
                                         <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
+                                            remarkPlugins={[remarkGfm, remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
                                             components={{
                                                 p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
                                             }}
@@ -649,7 +672,8 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                     </h4>
                                     <div className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 leading-relaxed [overflow-wrap:anywhere]">
                                         <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
+                                            remarkPlugins={[remarkGfm, remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
                                             components={{
                                                 p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
                                             }}

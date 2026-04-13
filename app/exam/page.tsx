@@ -4,7 +4,7 @@ import ExamEngine from './ExamEngine'
 import { FiAlertCircle, FiSearch } from 'react-icons/fi'
 import Link from 'next/link'
 
-export default async function ExamPage({ searchParams }: { searchParams: { orgId?: string, bankId?: string, type?: string, mode?: string, count?: string, keyword?: string } }) {
+export default async function ExamPage({ searchParams }: { searchParams: { orgId?: string, bankId?: string, type?: string, mode?: string, count?: string, keyword?: string, parseFilter?: string } }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -19,6 +19,7 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
     const mode = tmpParams.mode || 'show';
     const count = parseInt(tmpParams.count as string) || 10;
     const keyword = tmpParams.keyword || '';
+    const parseFilter = tmpParams.parseFilter || 'all';
 
     if (!orgId || !bankId) {
         redirect('/')
@@ -79,6 +80,12 @@ export default async function ExamPage({ searchParams }: { searchParams: { orgId
 
     if (keyword) {
         query = query.ilike('title', `%${keyword}%`)
+    }
+
+    if (parseFilter === 'with') {
+        query = query.not('parse', 'is', null).neq('parse', '')
+    } else if (parseFilter === 'without') {
+        query = query.or('parse.is.null,parse.eq.""')
     }
 
     const { data: allQuestions } = await query;
