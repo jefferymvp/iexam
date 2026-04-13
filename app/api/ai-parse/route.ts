@@ -97,7 +97,7 @@ std::unique_ptr<int> ptr(new int(10));
         }
 
         const payload = {
-            "model": "deepseek-v3",
+            "model": "deepseek/deepseek-v32",
             "messages": [{ "role": "user", "content": prompt }],
             "stream": stream
         };
