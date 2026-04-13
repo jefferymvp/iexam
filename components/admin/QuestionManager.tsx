@@ -557,7 +557,6 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                                             'revoke', 'next', 'save', '=', 'pageFullscreen', 'fullscreen', 'preview', 'htmlPreview'
                                         ] as ToolbarNames[]}
                                         style={{ height: '360px', borderRadius: '1rem' }}
-                                        noImgUploadInEditor={true}
                                     />
                                 </div>
                             </div>
