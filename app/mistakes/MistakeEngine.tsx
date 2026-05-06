@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { FiCheckCircle, FiArrowRight, FiArrowLeft, FiClock, FiTrash2, FiLogOut } from 'react-icons/fi'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import AnswerAnalysis from '@/components/exam/AnswerAnalysis'
 
 const safeParse = (val: any, fallback: any) => {
     if (val === null || val === undefined) return fallback;
@@ -16,12 +17,23 @@ const safeParse = (val: any, fallback: any) => {
     }
 }
 
-export default function MistakeEngine({ initialMistakes, userId }: { initialMistakes: any[], userId: string }) {
+export default function MistakeEngine({ initialMistakes, userId, userRole }: { initialMistakes: any[], userId: string, userRole: string }) {
     const [questions, setQuestions] = useState(initialMistakes)
     const [currentIndex, setCurrentIndex] = useState(0)
     const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | string[]>>({})
     const [showAnswer, setShowAnswer] = useState(false)
     const [isCorrectCurrent, setIsCorrectCurrent] = useState<boolean | null>(null)
+    const [isRemovedCurrent, setIsRemovedCurrent] = useState<boolean>(false)
+    const [isAiLoading, setIsAiLoading] = useState(false)
+    const [isStreamingEnabled, setIsStreamingEnabled] = useState(true)
+    const parseEndRef = useRef<HTMLDivElement>(null)
+
+    // 自动跟随滚动条
+    useEffect(() => {
+        if (isAiLoading && isStreamingEnabled) {
+            parseEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        }
+    }, [questions[currentIndex]?.parse, isAiLoading, isStreamingEnabled, currentIndex])
 
     const supabase = createClient()
 
@@ -66,16 +78,100 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
         }
 
         setIsCorrectCurrent(isCorrect)
-
         if (isCorrect) {
-            // Remove from mistakes
-            await supabase.from('user_mistakes').delete().eq('id', currentQ.mistake_id)
+            if (window.confirm('回答正确！是否将本题从错题本中永久移除？')) {
+                // Remove from mistakes
+                await supabase.from('user_mistakes').delete().eq('id', currentQ.mistake_id)
+                setIsRemovedCurrent(true)
+            } else {
+                setIsRemovedCurrent(false)
+            }
+        } else {
+            setIsRemovedCurrent(false)
+        }
+    }
+
+    const handleGenerateAIParse = async () => {
+        const hasExistingParse = currentQ.parse && currentQ.parse.trim().length > 0;
+        
+        if (hasExistingParse && userRole !== 'admin') {
+            alert("该题目已有解析，只有管理员可以重新生成内容。")
+            return
+        }
+
+        if (hasExistingParse) {
+            const confirm = window.confirm("当前题目已有解析，是否重新生成覆盖？")
+            if (!confirm) return
+        }
+
+        setIsAiLoading(true)
+        try {
+            const res = await fetch('/api/ai-parse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    questionId: currentQ.id,
+                    title: currentQ.title,
+                    type: currentQ.type,
+                    options: safeParse(currentQ.options, []),
+                    stream: isStreamingEnabled
+                })
+            })
+
+            if (!res.ok) {
+                const data = await res.json()
+                alert("生成解析失败: " + (data.error || "未知网络错误"))
+                return
+            }
+
+            if (isStreamingEnabled && res.body) {
+                const reader = res.body.getReader()
+                const decoder = new TextDecoder()
+                let accumulated = ''
+
+                // 开始流式前清空当前解析
+                setQuestions(prev => {
+                    const next = [...prev]
+                    next[currentIndex] = { ...next[currentIndex], parse: '' }
+                    return next
+                })
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+                    
+                    const text = decoder.decode(value, { stream: true })
+                    accumulated += text
+
+                    // 实时更新解析内容
+                    setQuestions(prev => {
+                        const next = [...prev]
+                        next[currentIndex] = { ...next[currentIndex], parse: accumulated }
+                        return next
+                    })
+                }
+            } else {
+                const data = await res.json()
+                if (data.result) {
+                    const newParse = data.result
+                    const updatedQuestions = [...questions]
+                    updatedQuestions[currentIndex] = { ...currentQ, parse: newParse }
+                    setQuestions(updatedQuestions)
+                } else {
+                    alert("生成解析失败: 未获取到结果")
+                }
+            }
+        } catch (e) {
+            console.error(e)
+            alert("请求发生异常。")
+        } finally {
+            setIsAiLoading(false)
         }
     }
 
     const handleNext = () => {
-        // If was correct, it's removed from local list
-        if (isCorrectCurrent) {
+        // If was removed, it's removed from local list
+        if (isRemovedCurrent) {
             const newQs = questions.filter(q => q.id !== currentQ.id)
             setQuestions(newQs)
             if (currentIndex >= newQs.length) {
@@ -86,9 +182,10 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                 setCurrentIndex(currentIndex + 1)
             }
         }
-
+ 
         setShowAnswer(false)
         setIsCorrectCurrent(null)
+        setIsRemovedCurrent(false)
     }
 
     const options = safeParse(currentQ.options, []);
@@ -185,33 +282,31 @@ export default function MistakeEngine({ initialMistakes, userId }: { initialMist
                 </div>
 
                 {showAnswer && (
-                    <div className="bg-gray-50 dark:bg-gray-750 p-6 sm:p-8 border-t border-gray-100 dark:border-gray-700 animate-in slide-in-from-top-4">
-                        <div className="flex items-center mb-4">
-                            {isCorrectCurrent ? (
-                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                                    <FiCheckCircle className="mr-1" /> 回答正确，已移出错题本
-                                </span>
-                            ) : (
-                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                                    <FiTrash2 className="mr-1" /> 回答依然错误，保留在错题本中
-                                </span>
-                            )}
+                    <>
+                        <div className="px-6 sm:px-8 py-4 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700">
+                             <div className="flex items-center">
+                                {isCorrectCurrent ? (
+                                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                                        <FiCheckCircle className="mr-1" /> 回答正确{isRemovedCurrent ? '，已移出错题本' : '，已保留在错题本'}
+                                    </span>
+                                ) : (
+                                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                                        <FiTrash2 className="mr-1" /> 回答依然错误，保留在错题本中
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center mb-3">
-                            <span className="text-blue-500 mr-2">🎯</span> 答案解析
-                        </h3>
-                        <p className="font-mono text-xl mb-4 text-green-600 dark:text-green-400 font-bold">正确答案: {Array.isArray(correctAnswer) ? correctAnswer.join(', ') : (currentQ.type === 'judge' ? (String(correctAnswer) === '1' ? '正确' : '错误') : correctAnswer)}</p>
-                        <div className="prose prose-blue dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 [overflow-wrap:anywhere]">
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
-                                }}
-                            >
-                                {(currentQ.parse || "暂无详细解析").replace(/\n/g, '\n\n')}
-                            </ReactMarkdown>
-                        </div>
-                    </div>
+                        <AnswerAnalysis
+                            question={currentQ}
+                            correctAnswer={correctAnswer}
+                            isAiLoading={isAiLoading}
+                            isStreamingEnabled={isStreamingEnabled}
+                            userRole={userRole}
+                            onGenerateAI={handleGenerateAIParse}
+                            onToggleStreaming={(enabled) => setIsStreamingEnabled(enabled)}
+                            renderEndRef={parseEndRef}
+                        />
+                    </>
                 )}
             </div>
 

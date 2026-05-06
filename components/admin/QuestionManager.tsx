@@ -9,6 +9,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import { MdEditor, ToolbarNames } from 'md-editor-rt'
 import 'md-editor-rt/lib/style.css'
+import AnswerAnalysis from '@/components/exam/AnswerAnalysis'
 
 interface QuestionManagerProps {
     bankId: string
@@ -659,28 +660,11 @@ export default function QuestionManager({ bankId, bankName, onBack }: QuestionMa
                             </div>
 
                             {/* Answer and Parse Section */}
-                            <div className="pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
-                                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold">
-                                    <FiCheckCircle className="w-5 h-5" />
-                                    <span>正确答案：{Array.isArray(previewQuestion.answer) ? previewQuestion.answer.join(', ') : (previewQuestion.type === 'judge' ? (previewQuestion.answer === '1' ? '正确' : '错误') : previewQuestion.answer)}</span>
-                                </div>
-                                <div className="bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100/50 dark:border-blue-800/30">
-                                    <h4 className="text-sm font-bold text-blue-700 dark:text-blue-300 mb-3 flex items-center gap-2">
-                                        <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
-                                        答案解析
-                                    </h4>
-                                    <div className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 leading-relaxed [overflow-wrap:anywhere]">
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkGfm, remarkMath]}
-                                            rehypePlugins={[rehypeKatex]}
-                                            components={{
-                                                p: ({ node, ...props }) => <p style={{ whiteSpace: 'pre-wrap', marginTop: 0, marginBottom: '0.25rem' }} {...props} />
-                                            }}
-                                        >
-                                            {(previewQuestion.parse || "暂无详细解析内容。")?.replace(/\n/g, '\n\n')}
-                                        </ReactMarkdown>
-                                    </div>
-                                </div>
+                            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                                <AnswerAnalysis
+                                    question={previewQuestion}
+                                    correctAnswer={previewQuestion.answer}
+                                />
                             </div>
                         </div>
 

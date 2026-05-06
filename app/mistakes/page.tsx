@@ -12,6 +12,14 @@ export default async function MistakesPage() {
         redirect('/login')
     }
 
+    // Fetch user profile for role
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+    const userRole = profile?.role || 'user'
+
     // Fetch mistakes with their associated questions
     const { data: mistakesData } = await supabase
         .from('user_mistakes')
@@ -55,7 +63,7 @@ export default async function MistakesPage() {
                 </p>
             </div>
 
-            <MistakeEngine initialMistakes={mistakes} userId={user.id} />
+            <MistakeEngine initialMistakes={mistakes} userId={user.id} userRole={userRole} />
         </div>
     )
 }
